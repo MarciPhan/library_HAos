@@ -32,6 +32,16 @@ class BookcaseStatsSensor(SensorEntity):
         
         return len([b for b in books.values() if b.get("status") == self._category])
 
+    @property
+    def extra_state_attributes(self):
+        """Return the state attributes."""
+        books = self._hass.data[DOMAIN][self._entry.entry_id]["books"]
+        if self._category == "total":
+            return {
+                "books": list(books.values())
+            }
+        return {}
+
     async def async_added_to_hass(self):
         """Register callbacks."""
         self.async_on_remove(
