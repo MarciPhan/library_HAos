@@ -49,9 +49,19 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             "id": book_id,
             "isbn": isbn,
             "title": metadata["title"],
+            "subtitle": metadata.get("subtitle"),
             "authors": metadata["authors"],
+            "publisher": metadata["publishers"][0] if metadata.get("publishers") else "Neznámé",
+            "year": metadata.get("publish_date"),
+            "language": metadata["languages"][0] if metadata.get("languages") else "Neznámý",
+            "page_count": metadata.get("pages") or 0,
+            "count": 1,
             "cover_url": metadata["cover_url"],
+            "link": metadata.get("url"),
+            "genre": metadata.get("subjects", []),
             "status": STATUS_TO_READ,
+            "is_read": False,
+            "date_read": None,
             "rating": 0,
             "notes": "",
             "lent_to": None,
@@ -73,7 +83,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             return
 
         updates = {}
-        for key in ["status", "rating", "notes", "lent_to"]:
+        for key in ["status", "is_read", "date_read", "rating", "notes", "lent_to", "count", "genre"]:
             if key in call.data:
                 updates[key] = call.data[key]
 

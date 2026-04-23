@@ -20,6 +20,14 @@ update_book:
       name: Stav
       description: "Možnosti: to_read, reading, read"
       example: "read"
+    is_read:
+      name: Přečteno
+      description: Logická hodnota (true/false).
+      example: true
+    date_read:
+      name: Datum přečtení
+      description: Datum ve formátu RRRR-MM-DD.
+      example: "2026-04-23"
     rating:
       name: Hodnocení
       description: Počet hvězdiček (0-5).
@@ -30,6 +38,13 @@ update_book:
     lent_to:
       name: Půjčeno komu
       description: Jméno osoby, které byla kniha půjčena.
+    count:
+      name: Počet
+      description: Počet kusů v knihovně.
+      example: 1
+    genre:
+      name: Žánr
+      description: Seznam žánrů.
 
 delete_book:
   name: Smazat knihu

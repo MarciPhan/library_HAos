@@ -25,11 +25,15 @@ async def fetch_book_metadata(isbn: str):
                 return {
                     "isbn": isbn,
                     "title": book_info.get("title", "Unknown Title"),
+                    "subtitle": book_info.get("subtitle"),
                     "authors": [author.get("name") for author in book_info.get("authors", [])],
+                    "publishers": [pub.get("name") for pub in book_info.get("publishers", [])],
                     "publish_date": book_info.get("publish_date"),
+                    "languages": [lang.get("name") for lang in book_info.get("languages", [])],
                     "cover_url": book_info.get("cover", {}).get("large"),
                     "pages": book_info.get("number_of_pages"),
-                    "url": book_info.get("url")
+                    "url": book_info.get("url"),
+                    "subjects": [sub.get("name") for sub in book_info.get("subjects", [])[:5]]  # Limit to 5 genres
                 }
         except Exception as e:
             _LOGGER.error("Exception while fetching book metadata: %s", e)
