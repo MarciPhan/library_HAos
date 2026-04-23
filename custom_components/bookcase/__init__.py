@@ -1,6 +1,9 @@
 import logging
 import os
 import uuid
+
+from aiohttp import web
+from homeassistant.components.http import HomeAssistantView
 from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.helpers.typing import ConfigType
 from homeassistant.helpers.storage import Store
@@ -13,31 +16,35 @@ from .api import fetch_book_metadata
 _LOGGER = logging.getLogger(__name__)
 
 PANEL_URL = "bookcase"
-# Resolve www directory relative to this file – works on all platforms
 WWW_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "www")
+
+
+class BookcasePanelView(HomeAssistantView):
+    """Serve panel JS files for the Bookcase integration."""
+
+    url = "/bookcase_static/{filename:.+}"
+    name = "bookcase:static"
+    requires_auth = False
+
+    async def get(self, request, filename):
+        """Serve the requested file."""
+        filepath = os.path.join(WWW_DIR, filename)
+        if not os.path.isfile(filepath):
+            _LOGGER.error("Bookcase: file not found: %s", filepath)
+            raise web.HTTPNotFound()
+
+        _LOGGER.debug("Bookcase: serving %s", filepath)
+        return web.FileResponse(
+            filepath,
+            headers={"Cache-Control": "no-cache"},
+        )
 
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     """Set up the Bookcase integration."""
-    # Register static path for panel assets
-    _LOGGER.debug("Bookcase: registering static path from %s", WWW_DIR)
-    try:
-        # HA 2024.7+
-        from homeassistant.components.http import StaticPath
-        await hass.http.async_register_static_paths([
-            StaticPath("/bookcase_static", WWW_DIR, False)
-        ])
-        _LOGGER.info("Bookcase: static path registered (async)")
-    except (ImportError, AttributeError):
-        # Fallback for older HA versions
-        try:
-            hass.http.register_static_path("/bookcase_static", WWW_DIR, False)
-            _LOGGER.info("Bookcase: static path registered (sync fallback)")
-        except Exception as err:
-            _LOGGER.error("Bookcase: failed to register static path: %s", err)
-    except Exception as err:
-        _LOGGER.error("Bookcase: failed to register static path: %s", err)
-
+    # Serve panel assets via custom HTTP view
+    hass.http.register_view(BookcasePanelView())
+    _LOGGER.info("Bookcase: HTTP view registered for /bookcase_static/")
     return True
 
 
