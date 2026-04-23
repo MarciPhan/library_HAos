@@ -4,19 +4,35 @@ class BookcasePanel extends HTMLElement {
     this._loading = false;
     this._filter = 'all';
     this._searchQuery = '';
+    this._optimisticDeleted = new Set();
   }
 
   set hass(hass) {
-    const oldBooks = this._hass?.states['sensor.bookcase_total_books']?.attributes?.books;
-    this._hass = hass;
-    const newBooks = hass.states['sensor.bookcase_total_books']?.attributes?.books;
+    const newState = hass.states['sensor.bookcase_total_books'];
+    
+    if (this._hass && newState && this._lastState === newState) {
+      this._hass = hass;
+      return;
+    }
 
+    this._hass = hass;
+    this._lastState = newState;
+    
     if (!this.content) {
       this.initStructure();
     }
 
-    if (JSON.stringify(oldBooks) !== JSON.stringify(newBooks)) {
+    if (newState && newState.attributes && newState.attributes.books) {
       this._loading = false;
+      
+      // Clear optimistic deletions that are now confirmed by the server
+      const serverIds = new Set(newState.attributes.books.map(b => b.id));
+      for (const id of this._optimisticDeleted) {
+        if (!serverIds.has(id)) {
+          this._optimisticDeleted.delete(id);
+        }
+      }
+
       this.render();
       this.updateButtons();
     }
@@ -136,7 +152,10 @@ class BookcasePanel extends HTMLElement {
           transition: opacity 0.2s;
           white-space: nowrap;
         }
-        button.action-btn:disabled { opacity: 0.5; cursor: wait; }
+        button.action-btn:disabled {
+          opacity: 0.5;
+          cursor: wait;
+        }
 
         .grid {
           display: grid;
@@ -147,12 +166,16 @@ class BookcasePanel extends HTMLElement {
           background: var(--card-background-color);
           border-radius: 8px;
           padding: 8px;
+          box-shadow: none;
           border: 1px solid var(--divider-color);
-          transition: all 0.2s;
+          transition: border-color 0.2s, transform 0.2s;
           position: relative;
           cursor: pointer;
         }
-        .book-card:hover { border-color: var(--primary-color); transform: translateY(-4px); }
+        .book-card:hover {
+          border-color: var(--primary-color);
+          transform: translateY(-4px);
+        }
         .cover-wrapper {
           position: relative;
           width: 100%;
@@ -182,15 +205,26 @@ class BookcasePanel extends HTMLElement {
           min-height: 2.4rem;
         }
         .status-badge {
-          position: absolute; top: 6px; right: 6px;
-          padding: 2px 6px; border-radius: 4px;
-          font-size: 0.6rem; font-weight: bold; color: white;
-          background: rgba(0,0,0,0.6); z-index: 2;
+          position: absolute;
+          top: 6px; right: 6px;
+          padding: 2px 6px;
+          border-radius: 4px;
+          font-size: 0.6rem;
+          font-weight: bold;
+          color: white;
+          background: rgba(0,0,0,0.6);
+          z-index: 2;
         }
         .lent-badge {
-          position: absolute; bottom: 0; left: 0; right: 0;
-          background: #ff9800; color: white; padding: 4px;
-          font-size: 0.6rem; font-weight: bold; text-align: center; z-index: 2;
+          position: absolute;
+          bottom: 0; left: 0; right: 0;
+          background: #ff9800;
+          color: white;
+          padding: 4px;
+          font-size: 0.6rem;
+          font-weight: bold;
+          text-align: center;
+          z-index: 2;
         }
 
         /* Modal */
@@ -228,7 +262,7 @@ class BookcasePanel extends HTMLElement {
         .modal-right { padding: 30px; flex-grow: 1; display: flex; flex-direction: column; gap: 20px; }
         
         .form-group { display: flex; flex-direction: column; gap: 6px; }
-        label { font-size: 0.7rem; font-weight: 800; color: var(--secondary-text-color); text-transform: uppercase; letter-spacing: 0.5px; }
+        label { font-size: 0.75rem; font-weight: 700; color: var(--secondary-text-color); text-transform: uppercase; }
         select, textarea, .text-input {
           background: var(--secondary-background-color);
           border: 1px solid var(--divider-color);
@@ -367,7 +401,10 @@ class BookcasePanel extends HTMLElement {
       saveBtn.disabled = this._loading;
       saveBtn.innerText = this._loading ? '...' : (this._manualMode ? 'Přidat knihu' : 'Uložit změny');
     }
-    if (delBtn) { delBtn.disabled = this._loading; }
+    if (delBtn) {
+      delBtn.disabled = this._loading;
+      delBtn.innerText = this._loading ? '...' : 'Smazat';
+    }
   }
 
   saveBook(bookId) {
@@ -412,7 +449,7 @@ class BookcasePanel extends HTMLElement {
       });
     }
     
-    setTimeout(() => { if(this._loading) { this._loading = false; this.modal.classList.remove('open'); } }, 2000);
+    setTimeout(() => { this.modal.classList.remove('open'); }, 400);
   }
 
   deleteBook(bookId) {
@@ -420,8 +457,17 @@ class BookcasePanel extends HTMLElement {
     if (confirm('Opravdu chcete tuto knihu smazat?')) {
       this._loading = true;
       this.updateButtons();
+      
+      // OPTIMISTIC DELETE: 
+      // 1. Hide modal
+      this.modal.classList.remove('open');
+      // 2. Add to optimistic deleted set
+      this._optimisticDeleted.add(bookId);
+      // 3. Re-render immediately
+      this.render();
+      
+      // 4. Call server in background
       this._hass.callService('bookcase', 'delete_book', { book_id: bookId });
-      setTimeout(() => { if(this._loading) { this._loading = false; this.modal.classList.remove('open'); } }, 2000);
     }
   }
 
@@ -550,7 +596,7 @@ class BookcasePanel extends HTMLElement {
         </div>
 
         <div class="form-group">
-          <label>POPIS (STAŽENO Z INTERNETU)</label>
+          <label>POPIS (Z INTERNETU)</label>
           <textarea id="edit-description" rows="5" placeholder="Popis knihy...">${book.description || ''}</textarea>
         </div>
 
@@ -589,6 +635,9 @@ class BookcasePanel extends HTMLElement {
     let books = state.attributes.books;
     const userName = this._hass.user.name || 'Uživatel';
     
+    // Filter out optimistic deletions
+    books = books.filter(b => !this._optimisticDeleted.has(b.id));
+
     if (this._searchQuery) {
       books = books.filter(b => 
         (b.title || '').toLowerCase().includes(this._searchQuery) || 
