@@ -61,7 +61,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                 webcomponent_name="bookcase-panel",
                 sidebar_title="Knihovnička",
                 sidebar_icon="mdi:bookshelf",
-                module_url="/bookcase_static/panel.js?v=2.3",
+                module_url="/bookcase_static/panel.js?v=2.6",
                 require_admin=False,
             )
             _LOGGER.info("Bookcase: sidebar panel registered")
@@ -135,7 +135,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
         old_lent_to = data["books"][book_id].get("lent_to")
         updates = {}
-        for key in ["status", "is_read", "date_read", "rating", "notes", "lent_to", "lent_until", "count", "genre", "read_by"]:
+        for key in ["status", "is_read", "date_read", "rating", "notes", "description", "lent_to", "lent_until", "count", "genre", "read_by", "wishlist_by", "title", "authors", "cover_url"]:
             if key in call.data:
                 updates[key] = call.data[key]
 
@@ -180,7 +180,32 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             hass.data[DOMAIN][entry.entry_id]["books"] = data["books"]
             hass.bus.async_fire("bookcase_updated")
 
+    async def handle_add_book_manual(call: ServiceCall):
+        book_id = str(uuid.uuid4())
+        new_book = {
+            "id": book_id,
+            "isbn": call.data.get("isbn", ""),
+            "title": call.data.get("title", "Nová kniha"),
+            "authors": call.data.get("authors", []),
+            "publisher": call.data.get("publisher", ""),
+            "year": call.data.get("year", ""),
+            "language": call.data.get("language", "Čeština"),
+            "page_count": call.data.get("page_count", 0),
+            "cover_url": call.data.get("cover_url", ""),
+            "status": call.data.get("status", STATUS_TO_READ),
+            "notes": call.data.get("notes", ""),
+            "added_at": dt_util.now().isoformat(),
+            "read_by": [],
+            "wishlist_by": []
+        }
+
+        data["books"][book_id] = new_book
+        await store.async_save(data)
+        hass.data[DOMAIN][entry.entry_id]["books"] = data["books"]
+        hass.bus.async_fire("bookcase_updated")
+
     hass.services.async_register(DOMAIN, "add_by_isbn", handle_add_book)
+    hass.services.async_register(DOMAIN, "add_manual", handle_add_book_manual)
     hass.services.async_register(DOMAIN, "update_book", handle_update_book)
     hass.services.async_register(DOMAIN, "delete_book", handle_delete_book)
 

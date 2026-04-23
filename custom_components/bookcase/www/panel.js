@@ -18,7 +18,7 @@ class BookcasePanel extends HTMLElement {
     if (JSON.stringify(oldBooks) !== JSON.stringify(newBooks)) {
       this._loading = false;
       this.render();
-      this.updateAddButton();
+      this.updateButtons();
     }
   }
 
@@ -42,14 +42,14 @@ class BookcasePanel extends HTMLElement {
           justify-content: space-between;
           align-items: center;
           margin-bottom: 30px;
+          border-bottom: 1px solid var(--divider-color);
+          padding-bottom: 20px;
         }
         .header h1 {
           margin: 0;
-          font-size: 2.5rem;
-          font-weight: 800;
-          background: linear-gradient(135deg, var(--primary-color), #ff9800);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
+          font-size: 2rem;
+          font-weight: 700;
+          color: var(--primary-text-color);
         }
         
         .toolbar {
@@ -61,19 +61,17 @@ class BookcasePanel extends HTMLElement {
 
         .filter-bar {
           display: flex;
-          gap: 10px;
+          gap: 8px;
           overflow-x: auto;
           padding-bottom: 5px;
-          scrollbar-width: none;
         }
-        .filter-bar::-webkit-scrollbar { display: none; }
         
         .filter-btn {
-          background: var(--secondary-background-color);
+          background: var(--card-background-color);
           color: var(--primary-text-color);
           border: 1px solid var(--divider-color);
           padding: 8px 16px;
-          border-radius: 20px;
+          border-radius: 8px;
           cursor: pointer;
           white-space: nowrap;
           font-weight: 500;
@@ -83,7 +81,6 @@ class BookcasePanel extends HTMLElement {
           background: var(--primary-color);
           color: white;
           border-color: var(--primary-color);
-          box-shadow: 0 4px 10px var(--primary-color-alpha, rgba(3, 169, 244, 0.3));
         }
 
         .search-add-row {
@@ -95,7 +92,7 @@ class BookcasePanel extends HTMLElement {
           display: flex;
           align-items: center;
           background: var(--card-background-color);
-          border-radius: 12px;
+          border-radius: 8px;
           padding: 0 15px;
           border: 1px solid var(--divider-color);
         }
@@ -111,31 +108,35 @@ class BookcasePanel extends HTMLElement {
         .add-box {
           display: flex;
           background: var(--card-background-color);
-          border-radius: 12px;
+          border-radius: 8px;
           border: 1px solid var(--divider-color);
-          padding: 5px;
-          width: 350px;
+          padding: 4px;
+          gap: 5px;
         }
         .add-box input {
           background: transparent;
           border: none;
-          padding: 10px;
-          flex-grow: 1;
+          padding: 8px 12px;
+          width: 200px;
           color: var(--primary-text-color);
           outline: none;
         }
-        button#add-btn {
+        button.action-btn {
           background: var(--primary-color);
           color: white;
           border: none;
           padding: 8px 16px;
-          border-radius: 8px;
+          border-radius: 6px;
           cursor: pointer;
           font-weight: bold;
           display: flex;
           align-items: center;
+          justify-content: center;
           gap: 8px;
+          transition: opacity 0.2s;
+          white-space: nowrap;
         }
+        button.action-btn:disabled { opacity: 0.5; cursor: wait; }
 
         .grid {
           display: grid;
@@ -144,29 +145,34 @@ class BookcasePanel extends HTMLElement {
         }
         .book-card {
           background: var(--card-background-color);
-          border-radius: 12px;
-          padding: 10px;
-          box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-          transition: all 0.3s;
+          border-radius: 8px;
+          padding: 8px;
+          border: 1px solid var(--divider-color);
+          transition: all 0.2s;
           position: relative;
           cursor: pointer;
-          border: 1px solid transparent;
         }
-        .book-card:hover {
-          transform: translateY(-8px);
-          box-shadow: 0 12px 25px rgba(0,0,0,0.1);
-          border-color: var(--primary-color);
-        }
+        .book-card:hover { border-color: var(--primary-color); transform: translateY(-4px); }
         .cover-wrapper {
           position: relative;
           width: 100%;
           aspect-ratio: 2/3;
-          border-radius: 8px;
+          border-radius: 4px;
           overflow: hidden;
+          background: var(--secondary-background-color);
+          display: flex;
+          align-items: center;
+          justify-content: center;
         }
         .book-card img { width: 100%; height: 100%; object-fit: cover; }
+        .cover-fallback {
+          position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+          display: flex; flex-direction: column; align-items: center; justify-content: center;
+          text-align: center; padding: 10px; font-size: 10px; color: var(--secondary-text-color);
+          background: var(--secondary-background-color);
+        }
         .book-title {
-          font-weight: 700;
+          font-weight: 600;
           margin-top: 10px;
           font-size: 0.9rem;
           display: -webkit-box;
@@ -176,34 +182,23 @@ class BookcasePanel extends HTMLElement {
           min-height: 2.4rem;
         }
         .status-badge {
-          position: absolute;
-          top: 8px;
-          right: 8px;
-          padding: 2px 6px;
-          border-radius: 4px;
-          font-size: 0.6rem;
-          font-weight: bold;
-          color: white;
-          background: rgba(0,0,0,0.7);
+          position: absolute; top: 6px; right: 6px;
+          padding: 2px 6px; border-radius: 4px;
+          font-size: 0.6rem; font-weight: bold; color: white;
+          background: rgba(0,0,0,0.6); z-index: 2;
         }
         .lent-badge {
-          position: absolute;
-          bottom: 8px;
-          left: 8px;
-          background: #ff9800;
-          color: white;
-          padding: 2px 6px;
-          border-radius: 4px;
-          font-size: 0.6rem;
-          font-weight: bold;
+          position: absolute; bottom: 0; left: 0; right: 0;
+          background: #ff9800; color: white; padding: 4px;
+          font-size: 0.6rem; font-weight: bold; text-align: center; z-index: 2;
         }
 
-        /* Modal Styles */
+        /* Modal */
         .modal {
           display: none;
           position: fixed;
           top: 0; left: 0; width: 100%; height: 100%;
-          background: rgba(0,0,0,0.85);
+          background: rgba(0,0,0,0.7);
           z-index: 1000;
           align-items: center; justify-content: center;
           padding: 20px;
@@ -211,82 +206,89 @@ class BookcasePanel extends HTMLElement {
         .modal.open { display: flex; }
         .modal-content {
           background: var(--card-background-color);
-          max-width: 900px;
+          max-width: 850px;
           width: 100%;
-          border-radius: 20px;
+          border-radius: 12px;
           display: flex;
           overflow: hidden;
           position: relative;
           max-height: 90vh;
+          border: 1px solid var(--divider-color);
         }
         .modal-close {
           position: absolute; top: 15px; right: 15px;
-          width: 35px; height: 35px; border-radius: 50%;
+          width: 32px; height: 32px; border-radius: 50%;
           background: var(--secondary-background-color);
           display: flex; align-items: center; justify-content: center;
-          cursor: pointer; font-size: 20px; z-index: 11;
+          cursor: pointer; z-index: 11;
         }
         .modal-body { display: flex; width: 100%; overflow-y: auto; }
-        .modal-left { width: 300px; flex-shrink: 0; background: #111; }
+        .modal-left { width: 280px; flex-shrink: 0; background: var(--secondary-background-color); position: relative; }
         .modal-left img { width: 100%; height: 100%; object-fit: cover; }
         .modal-right { padding: 30px; flex-grow: 1; display: flex; flex-direction: column; gap: 20px; }
         
-        .form-group { display: flex; flex-direction: column; gap: 8px; }
-        label { font-size: 0.8rem; font-weight: bold; color: var(--secondary-text-color); text-transform: uppercase; }
+        .form-group { display: flex; flex-direction: column; gap: 6px; }
+        label { font-size: 0.7rem; font-weight: 800; color: var(--secondary-text-color); text-transform: uppercase; letter-spacing: 0.5px; }
         select, textarea, .text-input {
           background: var(--secondary-background-color);
           border: 1px solid var(--divider-color);
           color: var(--primary-text-color);
           padding: 10px;
-          border-radius: 8px;
-          font-size: 1rem;
+          border-radius: 6px;
+          font-size: 0.9rem;
+          outline: none;
         }
-        .rating-stars { display: flex; gap: 5px; font-size: 1.5rem; color: #ffca28; cursor: pointer; }
         
-        .save-btn {
-          background: var(--primary-color);
-          color: white;
-          border: none;
+        .rating-stars { display: flex; gap: 4px; font-size: 1.4rem; color: #ffca28; cursor: pointer; }
+        
+        .toggle-row { display: flex; gap: 10px; }
+        .toggle-btn {
+          flex: 1;
           padding: 12px;
-          border-radius: 10px;
-          font-weight: bold;
+          border-radius: 8px;
+          border: 1px solid var(--divider-color);
+          background: var(--secondary-background-color);
+          color: var(--primary-text-color);
           cursor: pointer;
-          margin-top: 10px;
+          font-weight: bold;
+          text-align: center;
+          transition: all 0.2s;
         }
+        .toggle-btn.active-read { background: #4caf50; color: white; border-color: #4caf50; }
+        .toggle-btn.active-wish { background: #03a9f4; color: white; border-color: #03a9f4; }
         
-        .loading-spinner {
-          display: none; width: 16px; height: 16px;
+        .user-list { font-size: 0.8rem; color: var(--secondary-text-color); margin-top: 4px; }
+        
+        .spinner {
+          width: 14px; height: 14px;
           border: 2px solid rgba(255,255,255,0.3);
           border-radius: 50%; border-top-color: #fff;
-          animation: spin 1s linear infinite;
+          animation: spin 0.8s linear infinite;
+          display: none;
         }
         @keyframes spin { to { transform: rotate(360deg); } }
-
-        @media (max-width: 768px) {
-          .modal-body { flex-direction: column; }
-          .modal-left { width: 100%; height: 250px; }
-          .search-add-row { flex-direction: column; }
-          .add-box { width: 100%; }
-        }
       </style>
       
       <div class="container">
         <div class="header">
-          <h1>📚 Knihovnička</h1>
-          <div id="stats" style="opacity: 0.7;"></div>
+          <h1>Moje Knihovna</h1>
+          <div id="stats" style="font-size: 0.9rem; opacity: 0.6;"></div>
         </div>
         
         <div class="toolbar">
           <div class="search-add-row">
             <div class="search-box">
-              <span style="opacity: 0.5;">🔍</span>
-              <input type="text" id="search-input" placeholder="Hledat podle názvu nebo autora...">
+              <span style="opacity: 0.4;">🔍</span>
+              <input type="text" id="search-input" placeholder="Hledat knihu...">
             </div>
             <div class="add-box">
               <input type="text" id="isbn-input" placeholder="ISBN...">
-              <button id="add-btn">
-                <span class="loading-spinner" id="btn-spinner"></span>
-                <span id="btn-text">Přidat</span>
+              <button id="add-btn" class="action-btn">
+                <span class="spinner" id="add-spinner"></span>
+                <span id="add-text">ISBN</span>
+              </button>
+              <button id="manual-btn" class="action-btn" style="background: var(--secondary-background-color); color: var(--primary-text-color); border: 1px solid var(--divider-color);">
+                Ručně
               </button>
             </div>
           </div>
@@ -296,6 +298,7 @@ class BookcasePanel extends HTMLElement {
             <button class="filter-btn" data-filter="to_read">K přečtení</button>
             <button class="filter-btn" data-filter="reading">Rozečtené</button>
             <button class="filter-btn" data-filter="read">Přečtené</button>
+            <button class="filter-btn" data-filter="wishlist">Wishlist</button>
             <button class="filter-btn" data-filter="lent">Půjčené</button>
           </div>
         </div>
@@ -314,11 +317,11 @@ class BookcasePanel extends HTMLElement {
     this.content = this.querySelector('#book-grid');
     this.isbnInput = this.querySelector('#isbn-input');
     this.searchInput = this.querySelector('#search-input');
-    this.addBtn = this.querySelector('#add-btn');
     this.modal = this.querySelector('#book-modal');
     this.modalClose = this.querySelector('.modal-close');
 
-    this.addBtn.onclick = () => this.handleAdd();
+    this.querySelector('#add-btn').onclick = () => this.handleAdd();
+    this.querySelector('#manual-btn').onclick = () => this.openManualAdd();
     this.isbnInput.onkeypress = (e) => { if (e.key === 'Enter') this.handleAdd(); };
     this.searchInput.oninput = (e) => {
       this._searchQuery = e.target.value.toLowerCase();
@@ -342,114 +345,225 @@ class BookcasePanel extends HTMLElement {
     const isbn = this.isbnInput.value.trim();
     if (isbn && !this._loading) {
       this._loading = true;
-      this.updateAddButton();
+      this.updateButtons();
       this._hass.callService('bookcase', 'add_by_isbn', { isbn });
       this.isbnInput.value = '';
     }
   }
 
-  updateAddButton() {
-    const btnText = this.querySelector('#btn-text');
-    const spinner = this.querySelector('#btn-spinner');
-    if (this._loading) {
-      this.addBtn.disabled = true;
-      btnText.innerText = '...';
-      spinner.style.display = 'block';
-    } else {
-      this.addBtn.disabled = false;
-      btnText.innerText = 'Přidat';
-      spinner.style.display = 'none';
+  updateButtons() {
+    const addBtn = this.querySelector('#add-btn');
+    const addSpinner = this.querySelector('#add-spinner');
+    const addText = this.querySelector('#add-text');
+    if (addBtn) {
+      addBtn.disabled = this._loading;
+      addSpinner.style.display = this._loading ? 'block' : 'none';
+      addText.style.display = this._loading ? 'none' : 'block';
     }
+
+    const saveBtn = this.querySelector('#save-btn');
+    const delBtn = this.querySelector('#modal-delete-btn');
+    if (saveBtn) {
+      saveBtn.disabled = this._loading;
+      saveBtn.innerText = this._loading ? '...' : (this._manualMode ? 'Přidat knihu' : 'Uložit změny');
+    }
+    if (delBtn) { delBtn.disabled = this._loading; }
   }
 
   saveBook(bookId) {
+    if (this._loading) return;
+    this._loading = true;
+    this.updateButtons();
+
+    const title = this.querySelector('#edit-title').value.trim();
+    const authorStr = this.querySelector('#edit-author').value.trim();
     const status = this.querySelector('#edit-status').value;
     const rating = parseInt(this.querySelector('#edit-rating').dataset.value);
     const notes = this.querySelector('#edit-notes').value;
+    const description = this.querySelector('#edit-description')?.value || '';
     const lentTo = this.querySelector('#edit-lent').value.trim() || null;
     const lentUntil = this.querySelector('#edit-lent-until').value || null;
-    const readBy = this.querySelector('#edit-read-by').value.trim() || null;
+    const coverUrl = this.querySelector('#edit-cover-url').value.trim() || null;
+    
+    const readBy = JSON.parse(this.querySelector('#modal-body').dataset.readBy || '[]');
+    const wishlistBy = JSON.parse(this.querySelector('#modal-body').dataset.wishlistBy || '[]');
 
-    this._hass.callService('bookcase', 'update_book', {
-      book_id: bookId,
+    const serviceData = {
+      title: title,
+      authors: authorStr.split(',').map(s => s.trim()).filter(s => s),
+      cover_url: coverUrl,
       status: status,
       rating: rating,
       notes: notes,
+      description: description,
       lent_to: lentTo,
       lent_until: lentUntil,
-      is_read: status === 'read',
-      read_by: readBy
-    });
+      read_by: readBy,
+      wishlist_by: wishlistBy,
+      is_read: readBy.length > 0
+    };
+
+    if (this._manualMode) {
+      this._hass.callService('bookcase', 'add_manual', serviceData);
+    } else {
+      this._hass.callService('bookcase', 'update_book', {
+        ...serviceData,
+        book_id: bookId
+      });
+    }
     
-    this.modal.classList.remove('open');
+    setTimeout(() => { if(this._loading) { this._loading = false; this.modal.classList.remove('open'); } }, 2000);
   }
 
   deleteBook(bookId) {
+    if (this._loading) return;
     if (confirm('Opravdu chcete tuto knihu smazat?')) {
+      this._loading = true;
+      this.updateButtons();
       this._hass.callService('bookcase', 'delete_book', { book_id: bookId });
-      this.modal.classList.remove('open');
+      setTimeout(() => { if(this._loading) { this._loading = false; this.modal.classList.remove('open'); } }, 2000);
     }
   }
 
-  openDetail(book) {
+  openManualAdd() {
+    this._manualMode = true;
+    this.openDetail({
+      title: '',
+      authors: [],
+      status: 'to_read',
+      rating: 0,
+      notes: '',
+      read_by: [],
+      wishlist_by: []
+    });
+  }
+
+  toggleUser(bookId, type) {
+    const userName = this._hass.user.name || 'Uživatel';
     const body = this.querySelector('#modal-body');
+    const key = type === 'read' ? 'readBy' : 'wishlistBy';
+    let list = JSON.parse(body.dataset[key] || '[]');
+    
+    if (list.includes(userName)) {
+      list = list.filter(u => u !== userName);
+    } else {
+      list.push(userName);
+      if (type === 'read') {
+        let wishList = JSON.parse(body.dataset.wishlistBy || '[]');
+        wishList = wishList.filter(u => u !== userName);
+        body.dataset.wishlistBy = JSON.stringify(wishList);
+      }
+    }
+    
+    body.dataset[key] = JSON.stringify(list);
+    this.updateToggleButtons();
+  }
+
+  updateToggleButtons() {
+    const userName = this._hass.user.name || 'Uživatel';
+    const body = this.querySelector('#modal-body');
+    const readList = JSON.parse(body.dataset.readBy || '[]');
+    const wishList = JSON.parse(body.dataset.wishlistBy || '[]');
+    
+    const readBtn = this.querySelector('#toggle-read');
+    const wishBtn = this.querySelector('#toggle-wish');
+    
+    if (readBtn) readBtn.className = 'toggle-btn' + (readList.includes(userName) ? ' active-read' : '');
+    if (wishBtn) wishBtn.className = 'toggle-btn' + (wishList.includes(userName) ? ' active-wish' : '');
+    
+    this.querySelector('#read-users').innerText = readList.length > 0 ? 'Přečetli: ' + readList.join(', ') : '';
+    this.querySelector('#wish-users').innerText = wishList.length > 0 ? 'Chtějí přečíst: ' + wishList.join(', ') : '';
+  }
+
+  openDetail(book) {
+    if (!this._manualMode) this._manualMode = false;
+    const body = this.querySelector('#modal-body');
+    body.dataset.readBy = JSON.stringify(Array.isArray(book.read_by) ? book.read_by : (book.read_by ? [book.read_by] : []));
+    body.dataset.wishlistBy = JSON.stringify(Array.isArray(book.wishlist_by) ? book.wishlist_by : []);
+    
     const rating = book.rating || 0;
-    const readBy = book.read_by || (book.is_read ? (this._hass.user.name || 'Uživatel') : '');
 
     body.innerHTML = `
       <div class="modal-left">
-        <img src="${book.cover_url || ''}" onerror="this.src='https://via.placeholder.com/400x600?text=Bez+obalky'">
+        <img src="${book.cover_url || ''}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+        <div class="cover-fallback" style="display:none; font-size: 14px;">
+          <span style="font-size: 40px; margin-bottom: 10px;">📖</span>
+          ${book.title || 'Nová kniha'}
+        </div>
       </div>
       <div class="modal-right">
-        <h2 style="margin:0;">${book.title}</h2>
-        <div style="color:var(--primary-color); font-weight:500;">${book.authors ? book.authors.join(', ') : 'Neznámý autor'}</div>
-        
         <div class="form-group">
-          <label>Hodnocení</label>
+          <label>NÁZEV KNIHY</label>
+          <input type="text" id="edit-title" class="text-input" value="${book.title || ''}" placeholder="Titul...">
+        </div>
+        <div class="form-group">
+          <label>AUTOR (oddělit čárkou)</label>
+          <input type="text" id="edit-author" class="text-input" value="${(book.authors || []).join(', ')}" placeholder="Jméno...">
+        </div>
+        <div class="form-group">
+          <label>URL OBÁLKY</label>
+          <input type="text" id="edit-cover-url" class="text-input" value="${book.cover_url || ''}" placeholder="https://...">
+        </div>
+        
+        <div class="toggle-row">
+          <div style="flex:1;">
+            <div class="toggle-btn" id="toggle-read">Přečetl jsem</div>
+            <div class="user-list" id="read-users"></div>
+          </div>
+          <div style="flex:1;">
+            <div class="toggle-btn" id="toggle-wish">Chci přečíst</div>
+            <div class="user-list" id="wish-users"></div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>HODNOCENÍ</label>
           <div class="rating-stars" id="edit-rating" data-value="${rating}">
             ${[1,2,3,4,5].map(n => `<span data-n="${n}">${n <= rating ? '★' : '☆'}</span>`).join('')}
           </div>
         </div>
 
-        <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 20px;">
           <div class="form-group">
-            <label>Stav</label>
+            <label>STAV KNIHY</label>
             <select id="edit-status">
-              <option value="to_read" ${book.status === 'to_read' ? 'selected' : ''}>K přečtení</option>
-              <option value="reading" ${book.status === 'reading' ? 'selected' : ''}>Rozečteno</option>
-              <option value="read" ${book.status === 'read' ? 'selected' : ''}>Přečteno</option>
+              <option value="to_read" ${book.status === 'to_read' ? 'selected' : ''}>Máme v knihovně</option>
+              <option value="reading" ${book.status === 'reading' ? 'selected' : ''}>Právě čtu</option>
+              <option value="read" ${book.status === 'read' ? 'selected' : ''}>Přečteno (všichni)</option>
+              <option value="wishlist" ${book.status === 'wishlist' ? 'selected' : ''}>Na Wishlistu (nemáme ji)</option>
             </select>
           </div>
           <div class="form-group">
-            <label>Přečetl(a)</label>
-            <input type="text" id="edit-read-by" class="text-input" value="${readBy}" placeholder="Jméno uživatele...">
-          </div>
-        </div>
-
-        <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 15px;">
-          <div class="form-group">
-            <label>Půjčeno komu</label>
-            <input type="text" id="edit-lent" class="text-input" value="${book.lent_to || ''}" placeholder="Jméno osoby...">
-          </div>
-          <div class="form-group">
-            <label>Vrátit do</label>
-            <input type="date" id="edit-lent-until" class="text-input" value="${book.lent_until || ''}">
+            <label>PŮJČENO KOMU</label>
+            <input type="text" id="edit-lent" class="text-input" value="${book.lent_to || ''}" placeholder="Jméno...">
           </div>
         </div>
 
         <div class="form-group">
-          <label>Poznámky</label>
-          <textarea id="edit-notes" rows="3">${book.notes || ''}</textarea>
+          <label>VRÁTIT DO</label>
+          <input type="date" id="edit-lent-until" class="text-input" value="${book.lent_until || ''}">
         </div>
 
-        <div style="display:flex; gap:10px; margin-top:10px;">
-          <button class="save-btn" id="save-btn" style="flex-grow:1;">Uložit změny</button>
-          <button class="save-btn" id="modal-delete-btn" style="background:#ff5252;">Smazat</button>
+        <div class="form-group">
+          <label>POZNÁMKY</label>
+          <textarea id="edit-notes" rows="3" placeholder="Vaše poznámky...">${book.notes || ''}</textarea>
+        </div>
+
+        <div class="form-group">
+          <label>POPIS (STAŽENO Z INTERNETU)</label>
+          <textarea id="edit-description" rows="5" placeholder="Popis knihy...">${book.description || ''}</textarea>
+        </div>
+
+        <div style="display:flex; gap:12px; margin-top:10px;">
+          <button class="action-btn" id="save-btn" style="flex-grow:1; height:45px;">${this._manualMode ? 'Přidat knihu' : 'Uložit změny'}</button>
+          ${!this._manualMode ? `<button class="action-btn" id="modal-delete-btn" style="background:#f44336; height:45px;">Smazat</button>` : ''}
         </div>
       </div>
     `;
 
-    // Rating stars logic
+    body.querySelector('#toggle-read').onclick = () => this.toggleUser(book.id, 'read');
+    body.querySelector('#toggle-wish').onclick = () => this.toggleUser(book.id, 'wish');
+    
     const starContainer = body.querySelector('#edit-rating');
     starContainer.querySelectorAll('span').forEach(star => {
       star.onclick = () => {
@@ -462,8 +576,9 @@ class BookcasePanel extends HTMLElement {
     });
 
     body.querySelector('#save-btn').onclick = () => this.saveBook(book.id);
-    body.querySelector('#modal-delete-btn').onclick = () => this.deleteBook(book.id);
+    if (!this._manualMode) body.querySelector('#modal-delete-btn').onclick = () => this.deleteBook(book.id);
     
+    this.updateToggleButtons();
     this.modal.classList.add('open');
   }
 
@@ -472,19 +587,22 @@ class BookcasePanel extends HTMLElement {
     if (!state || !state.attributes.books) return;
 
     let books = state.attributes.books;
+    const userName = this._hass.user.name || 'Uživatel';
     
-    // Search filter
     if (this._searchQuery) {
       books = books.filter(b => 
-        b.title.toLowerCase().includes(this._searchQuery) || 
+        (b.title || '').toLowerCase().includes(this._searchQuery) || 
         (b.authors && b.authors.some(a => a.toLowerCase().includes(this._searchQuery)))
       );
     }
 
-    // Tab filter
     if (this._filter !== 'all') {
       if (this._filter === 'lent') {
         books = books.filter(b => b.lent_to);
+      } else if (this._filter === 'wishlist') {
+        books = books.filter(b => b.status === 'wishlist' || (Array.isArray(b.wishlist_by) && b.wishlist_by.includes(userName)));
+      } else if (this._filter === 'read') {
+        books = books.filter(b => Array.isArray(b.read_by) && b.read_by.includes(userName));
       } else {
         books = books.filter(b => b.status === this._filter);
       }
@@ -496,21 +614,25 @@ class BookcasePanel extends HTMLElement {
     [...books].reverse().forEach(book => {
       const card = document.createElement('div');
       card.className = 'book-card';
-      card.onclick = () => this.openDetail(book);
+      card.onclick = () => { this._manualMode = false; this.openDetail(book); };
       
-      const statusLabels = { 'to_read': 'CHCI PŘEČÍST', 'reading': 'ROZEČTENO', 'read': 'PŘEČTENO' };
-      const statusColors = { 'to_read': '#03a9f4', 'reading': '#4caf50', 'read': '#9c27b0' };
+      const statusColors = { 'to_read': '#2196f3', 'reading': '#4caf50', 'read': '#9c27b0', 'wishlist': '#ff9800' };
+      const statusLabels = { 'to_read': 'MÁME', 'reading': 'ČTU', 'read': 'HOTOVO', 'wishlist': 'CHCI' };
       
       card.innerHTML = `
         <div class="cover-wrapper">
-          <img src="${book.cover_url || ''}" onerror="this.style.opacity='0.2';">
-          <div class="status-badge" style="background:${statusColors[book.status] || '#555'}">${statusLabels[book.status] || ''}</div>
+          <img src="${book.cover_url || ''}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+          <div class="cover-fallback" style="display:none;">
+            <span style="font-size: 24px; margin-bottom: 5px;">📖</span>
+            <div style="font-weight:bold; overflow:hidden; text-overflow:ellipsis; width:100%; max-height: 40px;">${book.title}</div>
+          </div>
+          <div class="status-badge" style="background:${statusColors[book.status] || '#666'}">${statusLabels[book.status] || ''}</div>
           ${book.lent_to ? `<div class="lent-badge">PŮJČENO: ${book.lent_to}</div>` : ''}
         </div>
         <div class="book-title">${book.title}</div>
-        <div style="font-size:0.75rem; color:var(--secondary-text-color); margin-top:4px;">
-          ${book.rating > 0 ? `<span style="color:#ffca28;">${'★'.repeat(book.rating)}</span> ` : ''}
-          ${book.authors ? book.authors[0] : ''}
+        <div style="font-size:0.75rem; color:var(--secondary-text-color); margin-top:4px; display:flex; justify-content:space-between;">
+          <span>${book.authors ? book.authors[0] : ''}</span>
+          ${book.rating > 0 ? `<span style="color:#ffca28;">${'★'.repeat(book.rating)}</span>` : ''}
         </div>
       `;
       this.content.appendChild(card);
