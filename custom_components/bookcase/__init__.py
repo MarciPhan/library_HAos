@@ -33,14 +33,18 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         "books": data["books"]
     }
 
-    # Register static path for the panel
+    # 1. Register static path
     try:
         from homeassistant.components.http import StaticPath
         await hass.http.async_register_static_paths([
             StaticPath("/bookcase_static", hass.config.path("custom_components/bookcase/www"), False)
         ])
+        _LOGGER.info("Bookcase static path registered")
+    except Exception as err:
+        _LOGGER.error("Failed to register Bookcase static path: %s", err)
 
-        # Register the custom panel in the sidebar
+    # 2. Register panel
+    try:
         hass.components.frontend.async_register_panel(
             hass,
             component_name="custom",
@@ -48,12 +52,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             sidebar_icon="mdi:bookshelf",
             frontend_url_path="bookcase",
             config={
-                "_type": "module",
                 "url": "/bookcase_static/panel.js",
             },
             require_admin=False
         )
-        _LOGGER.info("Bookcase panel registered successfully")
+        _LOGGER.info("Bookcase panel registration command sent")
     except Exception as err:
         _LOGGER.error("Failed to register Bookcase panel: %s", err)
 
