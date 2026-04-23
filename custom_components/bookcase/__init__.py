@@ -11,43 +11,47 @@ from .api import fetch_book_metadata
 
 _LOGGER = logging.getLogger(__name__)
 
+PANEL_URL = "bookcase"
+
+
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     """Set up the Bookcase integration."""
-    # 1. Register static path
+    # Register static path for panel assets
     try:
         from homeassistant.components.http import StaticPath
         await hass.http.async_register_static_paths([
             StaticPath("/bookcase_static", hass.config.path("custom_components/bookcase/www"), False)
         ])
-        _LOGGER.info("Bookcase static path registered globally")
+        _LOGGER.info("Bookcase: static path registered")
     except Exception as err:
-        _LOGGER.error("Failed to register Bookcase static path: %s", err)
-
-    # 2. Register panel
-    try:
-        hass.components.frontend.async_register_panel(
-            hass,
-            component_name="custom",
-            sidebar_title="Knihovnička",
-            sidebar_icon="mdi:bookshelf",
-            frontend_url_path="bookcase",
-            config={
-                "url": "/bookcase_static/panel.js",
-            },
-            require_admin=False
-        )
-        _LOGGER.info("Bookcase panel registration command sent globally")
-    except Exception as err:
-        _LOGGER.error("Failed to register Bookcase panel: %s", err)
+        _LOGGER.error("Bookcase: failed to register static path: %s", err)
 
     return True
 
+
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up Bookcase from a config entry."""
-    
+
+    # Register sidebar panel (only once)
+    if PANEL_URL not in hass.data.get("frontend_panels", {}):
+        try:
+            from homeassistant.components.panel_custom import async_register_panel
+            await async_register_panel(
+                hass,
+                frontend_url_path=PANEL_URL,
+                webcomponent_name="bookcase-panel",
+                sidebar_title="Knihovnička",
+                sidebar_icon="mdi:bookshelf",
+                module_url="/bookcase_static/panel.js",
+                require_admin=False,
+            )
+            _LOGGER.info("Bookcase: sidebar panel registered")
+        except Exception as err:
+            _LOGGER.error("Bookcase: failed to register panel: %s", err)
+
     # Initialize storage
     store = Store(hass, STORAGE_VERSION, STORAGE_KEY)
-    
+
     # Load data
     data = await store.async_load()
     if data is None:
@@ -100,7 +104,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         await store.async_save(data)
         hass.data[DOMAIN][entry.entry_id]["books"] = data["books"]
         _LOGGER.info("Added book: %s", metadata["title"])
-        
+
         # Trigger sensor update
         hass.bus.async_fire("bookcase_updated")
 
@@ -137,10 +141,19 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     return True
 
+
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload a config entry."""
     unload_ok = await hass.config_entries.async_forward_entry_unload(entry, "sensor")
     if unload_ok:
         hass.data[DOMAIN].pop(entry.entry_id)
+
+    # Remove sidebar panel if no more entries
+    if not hass.data.get(DOMAIN):
+        try:
+            hass.components.frontend.async_remove_panel(PANEL_URL)
+            _LOGGER.info("Bookcase: sidebar panel removed")
+        except Exception:
+            pass
 
     return unload_ok
