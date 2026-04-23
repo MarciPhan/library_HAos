@@ -61,7 +61,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                 webcomponent_name="bookcase-panel",
                 sidebar_title="Knihovnička",
                 sidebar_icon="mdi:bookshelf",
-                module_url="/bookcase_static/panel.js?v=2.6",
+                module_url="/bookcase_static/panel.js?v=2.7",
                 require_admin=False,
             )
             _LOGGER.info("Bookcase: sidebar panel registered")
