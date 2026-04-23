@@ -4,6 +4,7 @@ from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.helpers.typing import ConfigType
 from homeassistant.helpers.storage import Store
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.util import dt as dt_util
 
 from .const import DOMAIN, STORAGE_KEY, STORAGE_VERSION, STATUS_TO_READ
 from .api import fetch_book_metadata
@@ -65,7 +66,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             "rating": 0,
             "notes": "",
             "lent_to": None,
-            "added_at": hass.datetime.now().isoformat() if hasattr(hass, 'datetime') else ""
+            "added_at": dt_util.now().isoformat()
         }
 
         data["books"][book_id] = new_book
@@ -105,9 +106,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.services.async_register(DOMAIN, "delete_book", handle_delete_book)
 
     # Forward to sensor platform
-    hass.async_create_task(
-        hass.config_entries.async_forward_entry_setup(entry, "sensor")
-    )
+    await hass.config_entries.async_forward_entry_setups(entry, ["sensor"])
 
     return True
 
