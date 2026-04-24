@@ -4,6 +4,7 @@ import re
 import homeassistant.util.dt as dt_util
 import os
 import aiohttp
+from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.components.http import HomeAssistantView, StaticPathConfig
 from .const import DOMAIN, STATUS_TO_READ
 from .api import fetch_book_metadata
@@ -248,7 +249,7 @@ async def async_setup_entry(hass: HomeAssistant, entry):
             StaticPathConfig("/bookcase_static", hass.config.path("custom_components/bookcase/www"), False)
         ])
         
-        hass.http.async_register_view(BookcaseCoverView(hass, data["books"]))
+        hass.http.register_view(BookcaseCoverView(hass, data["books"]))
         
         try:
             from homeassistant.components.frontend import async_register_built_in_panel
