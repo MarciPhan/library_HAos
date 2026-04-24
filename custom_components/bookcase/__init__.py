@@ -20,9 +20,10 @@ class BookcaseCoverView(HomeAssistantView):
     def __init__(self, hass, books):
         self.hass = hass
         self.books = books
-        self.cover_dir = hass.config.path("custom_components/bookcase/www/covers")
+        # Cesta k obálkám v rámci www adresáře komponenty
+        self.cover_dir = os.path.join(os.path.dirname(__file__), "www", "covers")
         if not os.path.exists(self.cover_dir):
-            os.makedirs(self.cover_dir)
+            os.makedirs(self.cover_dir, exist_ok=True)
 
     async def get(self, request, book_id):
         """Fetch and serve the cover."""
@@ -290,13 +291,19 @@ async def async_setup_entry(hass: HomeAssistant, entry):
     hass.data.setdefault(DOMAIN, {})
     hass.data[DOMAIN][entry.entry_id] = {"books": data["books"]}
     
-    if (True): # Vždy zkusíme zaregistrovat pro jistotu, HA si s duplicitou poradí
-        try:
-            hass.http.register_static_path("/bookcase_static", hass.config.path("custom_components/bookcase/www"), cache_headers=False)
-        except Exception as e:
-            _LOGGER.warning("Bookcase static path registration warning: %s", e)
-        
-        hass.http.register_view(BookcaseCoverView(hass, data["books"]))
+    # Registrace statických souborů (JS, obrázky)
+    www_path = os.path.join(os.path.dirname(__file__), "www")
+    if not os.path.exists(www_path):
+        _LOGGER.error("Bookcase: WWW directory not found at %s", www_path)
+    
+    try:
+        hass.http.register_static_path("/bookcase_static", www_path, cache_headers=False)
+        _LOGGER.info("Bookcase: Registered static path /bookcase_static for %s", www_path)
+    except Exception as e:
+        # Ignorujeme chybu, pokud je cesta již zaregistrována (např. při reloadu)
+        _LOGGER.debug("Bookcase: Static path /bookcase_static already registered or error: %s", e)
+    
+    hass.http.register_view(BookcaseCoverView(hass, data["books"]))
         
         try:
             from homeassistant.components.frontend import async_register_built_in_panel
@@ -308,7 +315,7 @@ async def async_setup_entry(hass: HomeAssistant, entry):
                 frontend_url_path="bookcase",
                 config={"_panel_custom": {
                     "name": "bookcase-panel",
-                    "module_url": "/bookcase_static/panel.js?v=7.5"
+                    "module_url": "/bookcase_static/panel.js?v=7.6"
                 }},
                 require_admin=False,
             )
