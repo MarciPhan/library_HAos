@@ -162,6 +162,10 @@ async def async_setup_entry(hass: HomeAssistant, entry):
         isbn = data["books"][book_id].get("isbn", "")
         if not isbn: return
         try:
+            import importlib
+            from . import api
+            importlib.reload(api)
+            from .api import fetch_book_metadata
             book_data = await fetch_book_metadata(hass, isbn)
         except Exception as err:
             _LOGGER.error("Bookcase: Refresh failed for %s: %s", isbn, err)
