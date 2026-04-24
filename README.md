@@ -1,23 +1,33 @@
-# Home Assistant Bookcase Integration
+# 📚 Knihovnička (Bookcase) pro Home Assistant
 
-A custom integration for Home Assistant to manage your personal book library.
+Profesionální integrace pro správu vaší osobní knihovny přímo v Home Assistantovi. Sledujte své knihy, hodnoťte je a sdílejte svou vášeň pro čtení s ostatními členy domácnosti.
 
-## Features
-- **Add books by ISBN**: Automatically fetches metadata (title, authors, cover) from Open Library API.
-- **Track Status**: Keep track of books you want to read, are currently reading, or have finished.
-- **Ratings & Notes**: Rate your books and add personal notes.
-- **Lending Tracker**: Keep track of who you lent your books to.
-- **Statistics**: Built-in sensors for total books, read books, etc.
+![Knihovnička Icon](custom_components/bookcase/icon.png)
 
-## Installation
-1. Copy the `custom_components/bookcase` directory to your HA `config` directory.
-2. Restart Home Assistant.
-3. Add the "Knihovnička" integration via the UI (Settings -> Devices & Services).
+## ✨ Hlavní funkce
+- **Automatické načítání metadat**: Stačí zadat ISBN nebo starý kód publikace (např. 23-058-65). Integrace čerpá z mnoha zdrojů:
+  - **Národní knihovna ČR (NKP)**
+  - **Knihovny.cz**
+  - **Databazeknih.cz**
+  - **Google Books** a **Open Library**
+  - **Martinus.cz** a **Didasko.cz**
+- **Podpora více uživatelů**: Každý člen domácnosti může mít vlastní hodnocení, poznámky a status u stejné knihy. Data se inteligentně slučují.
+- **Sledování stavu**: Mějte přehled o tom, co máte v knihovně, co právě čtete, co je na vašem wishlistu nebo co jste už přečetli.
+- **Evidence půjčování**: Sledujte, komu a do kdy jste své knihy půjčili.
+- **Statistiky a senzory**: Automatické senzory pro celkový počet knih, přečtené kusy, oblíbené autory atd.
+- **Moderní UI**: Krásný, responsivní panel s podporou tmavého režimu a okamžitou odezvou (Optimistic UI).
 
-## Services
-- `bookcase.add_by_isbn`: Add a book using its ISBN.
-- `bookcase.update_book`: Update status, rating, or notes.
-- `bookcase.delete_book`: Remove a book from the library.
+## 🚀 Instalace
+1. Zkopírujte složku `custom_components/bookcase` do vašeho adresáře `config` v HA.
+2. Restartujte Home Assistant.
+3. Přidejte integraci "Knihovnička" v nastavení (Nastavení -> Zařízení a služby -> Přidat integraci).
 
-## License
-MIT
+## 🛠 Služby
+- `bookcase.add_by_isbn`: Přidá knihu pomocí ISBN nebo jiného identifikátoru.
+- `bookcase.add_manual`: Ruční přidání knihy bez identifikátoru.
+- `bookcase.update_book`: Aktualizace statusu, hodnocení nebo poznámek.
+- `bookcase.delete_book`: Odstranění knihy z knihovny.
+
+## 📄 Licence
+Tento projekt je licencován pod MIT licencí.
+
