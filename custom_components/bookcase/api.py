@@ -11,6 +11,23 @@ _SOURCE_TIMEOUT = 6
 # Celkový timeout pro gather všech zdrojů
 _TOTAL_TIMEOUT = 8
 
+# Mapování jazykových kódů na české názvy
+_LANG_MAP = {
+    "cs": "Čeština", "sk": "Slovenština", "en": "Angličtina",
+    "de": "Němčina", "fr": "Francouzština", "pl": "Polština",
+    "es": "Španělština", "it": "Italština", "ru": "Ruština",
+    "pt": "Portugalština", "nl": "Holandština", "la": "Latina",
+    "und": "", "mul": "Vícejazyčné",
+}
+
+
+def _normalize_language(lang_code: str | None) -> str:
+    """Convert ISO 639 language code to Czech name."""
+    if not lang_code:
+        return ""
+    code = lang_code.strip().lower()[:2]
+    return _LANG_MAP.get(code, lang_code)
+
 
 async def fetch_book_metadata(hass, isbn: str) -> dict | None:
     """Fetch book metadata from all sources in parallel, merge results.
@@ -71,12 +88,16 @@ def _merge_results(isbn: str, results: list[dict]) -> dict:
     merged = {
         "isbn": isbn,
         "title": None,
+        "subtitle": None,
         "authors": [],
         "publishers": [],
         "publish_date": None,
         "cover_url": None,
         "pages": None,
         "description": None,
+        "language": None,
+        "genres": [],
+        "url": None,
     }
 
     for res in results:
@@ -84,6 +105,10 @@ def _merge_results(isbn: str, results: list[dict]) -> dict:
         res_title = res.get("title")
         if res_title and (not merged["title"] or len(res_title) > len(merged["title"])):
             merged["title"] = res_title
+
+        # Podnázev – první nalezený
+        if not merged["subtitle"] and res.get("subtitle"):
+            merged["subtitle"] = res["subtitle"]
 
         # Popis – preferujeme delší
         res_desc = res.get("description", "")
@@ -108,6 +133,19 @@ def _merge_results(isbn: str, results: list[dict]) -> dict:
         res_pages = res.get("pages")
         if res_pages and (not merged["pages"] or res_pages > merged["pages"]):
             merged["pages"] = res_pages
+
+        # Jazyk – první nalezený (neprázdný)
+        if not merged["language"] and res.get("language"):
+            merged["language"] = res["language"]
+
+        # Žánry – deduplikujeme
+        for genre in res.get("genres", []):
+            if genre and genre not in merged["genres"]:
+                merged["genres"].append(genre)
+
+        # URL odkaz na knihu – první nalezený
+        if not merged["url"] and res.get("url"):
+            merged["url"] = res["url"]
 
     # Obálka – prioritizace podle kvality zdroje
     cover_candidates = []
@@ -136,7 +174,7 @@ def _merge_results(isbn: str, results: list[dict]) -> dict:
 # ──────────────────────────────────────────────
 
 async def fetch_google_books(session, isbn: str) -> dict | None:
-    """Google Books API."""
+    """Google Books API – nejbohatší zdroj metadat."""
     url = f"https://www.googleapis.com/books/v1/volumes?q=isbn:{isbn}"
     async with session.get(url, timeout=_SOURCE_TIMEOUT) as resp:
         if resp.status != 200:
@@ -153,12 +191,16 @@ async def fetch_google_books(session, isbn: str) -> dict | None:
 
         return {
             "title": info.get("title"),
+            "subtitle": info.get("subtitle"),
             "authors": info.get("authors", []),
             "cover_url": cover,
             "pages": info.get("pageCount"),
             "description": info.get("description"),
             "publish_date": info.get("publishedDate"),
             "publishers": [info["publisher"]] if info.get("publisher") else [],
+            "language": _normalize_language(info.get("language")),
+            "genres": info.get("categories", []),
+            "url": info.get("infoLink"),
         }
 
 
@@ -174,13 +216,24 @@ async def fetch_open_library(session, isbn: str) -> dict | None:
             return None
 
         b = data[key]
+
+        # Subjects jako žánry
+        genres = []
+        for s in b.get("subjects", []):
+            name = s.get("name") if isinstance(s, dict) else str(s)
+            if name and name not in genres:
+                genres.append(name)
+
         return {
             "title": b.get("title"),
+            "subtitle": b.get("subtitle"),
             "authors": [a.get("name") for a in b.get("authors", []) if a.get("name")],
             "cover_url": b.get("cover", {}).get("large") or b.get("cover", {}).get("medium"),
             "pages": b.get("number_of_pages"),
             "publish_date": b.get("publish_date"),
             "publishers": [p.get("name") for p in b.get("publishers", []) if p.get("name")],
+            "genres": genres[:5],  # Omezíme na 5 nejdůležitějších
+            "url": b.get("url"),
         }
 
 
@@ -201,12 +254,26 @@ async def fetch_knihovny_cz(session, isbn: str) -> dict | None:
         # primary může být dict nebo list (prázdný)
         if isinstance(authors_dict, list):
             authors_dict = {}
+
+        # Žánry z subjects – každý subject je list stringů, bereme první
+        genres = []
+        for subj in r.get("subjects", []):
+            if isinstance(subj, list) and subj:
+                name = subj[0]
+                if name and name not in genres:
+                    genres.append(name)
+
+        # Jazyky
+        langs = r.get("languages", [])
+        language = _normalize_language(langs[0]) if langs else ""
+
         return {
             "title": r.get("title"),
             "authors": list(authors_dict.keys()) if authors_dict else [],
             "cover_url": f"https://www.knihovny.cz/Cover/Show?id={r.get('id')}&size=large" if r.get("id") else None,
             "publish_date": r.get("publicationDate"),
             "publishers": [],
+            "language": language,
+            "genres": genres[:5],
+            "url": f"https://www.knihovny.cz/Record/{r.get('id')}" if r.get("id") else None,
         }
-
-

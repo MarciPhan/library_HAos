@@ -496,29 +496,30 @@ class BookcasePanel extends HTMLElement {
     this._loading = true;
     this.updateButtons();
 
-    const title = this.querySelector('#edit-title').value.trim();
-    const authorStr = this.querySelector('#edit-author').value.trim();
-    const status = this.querySelector('#edit-status').value;
-    const rating = parseInt(this.querySelector('#edit-rating').dataset.value);
-    const notes = this.querySelector('#edit-notes').value;
-    const description = this.querySelector('#edit-description')?.value || '';
-    const lentTo = this.querySelector('#edit-lent').value.trim() || null;
-    const lentUntil = this.querySelector('#edit-lent-until').value || null;
-    const coverUrl = this.querySelector('#edit-cover-url').value.trim() || null;
-    
+    const v = id => (this.querySelector(id)?.value ?? '').trim();
     const readBy = JSON.parse(this.querySelector('#modal-body').dataset.readBy || '[]');
     const wishlistBy = JSON.parse(this.querySelector('#modal-body').dataset.wishlistBy || '[]');
+    const genreStr = v('#edit-genre');
 
     const serviceData = {
-      title: title,
-      authors: authorStr.split(',').map(s => s.trim()).filter(s => s),
-      cover_url: coverUrl,
-      status: status,
-      rating: rating,
-      notes: notes,
-      description: description,
-      lent_to: lentTo,
-      lent_until: lentUntil,
+      title: v('#edit-title'),
+      subtitle: v('#edit-subtitle'),
+      authors: v('#edit-author').split(',').map(s => s.trim()).filter(s => s),
+      cover_url: v('#edit-cover-url') || null,
+      publisher: v('#edit-publisher'),
+      year: v('#edit-year'),
+      language: v('#edit-language'),
+      page_count: parseInt(v('#edit-pages')) || 0,
+      count: parseInt(v('#edit-count')) || 1,
+      genre: genreStr ? genreStr.split(',').map(s => s.trim()).filter(s => s) : [],
+      url: v('#edit-url'),
+      status: v('#edit-status'),
+      rating: parseInt(this.querySelector('#edit-rating')?.dataset?.value) || 0,
+      notes: v('#edit-notes'),
+      description: v('#edit-description'),
+      date_read: v('#edit-date-read'),
+      lent_to: v('#edit-lent') || null,
+      lent_until: v('#edit-lent-until') || null,
       read_by: readBy,
       wishlist_by: wishlistBy,
       is_read: readBy.length > 0
@@ -527,12 +528,8 @@ class BookcasePanel extends HTMLElement {
     if (this._manualMode) {
       this._hass.callService('bookcase', 'add_manual', serviceData);
     } else {
-      this._hass.callService('bookcase', 'update_book', {
-        ...serviceData,
-        book_id: bookId
-      });
+      this._hass.callService('bookcase', 'update_book', { ...serviceData, book_id: bookId });
     }
-    
     setTimeout(() => { this.modal.classList.remove('open'); }, 400);
   }
 
@@ -558,13 +555,11 @@ class BookcasePanel extends HTMLElement {
   openManualAdd() {
     this._manualMode = true;
     this.openDetail({
-      title: '',
-      authors: [],
-      status: 'to_read',
-      rating: 0,
-      notes: '',
-      read_by: [],
-      wishlist_by: []
+      title: '', subtitle: '', authors: [], status: 'to_read',
+      rating: 0, notes: '', description: '', publisher: '', year: '',
+      language: 'Čeština', page_count: 0, count: 1, genre: [],
+      url: '', cover_url: '', isbn: '', date_read: '',
+      read_by: [], wishlist_by: []
     });
   }
 
@@ -610,8 +605,9 @@ class BookcasePanel extends HTMLElement {
     const body = this.querySelector('#modal-body');
     body.dataset.readBy = JSON.stringify(Array.isArray(book.read_by) ? book.read_by : (book.read_by ? [book.read_by] : []));
     body.dataset.wishlistBy = JSON.stringify(Array.isArray(book.wishlist_by) ? book.wishlist_by : []);
-    
     const rating = book.rating || 0;
+    const genres = Array.isArray(book.genre) ? book.genre.join(', ') : (book.genre || '');
+    const isLent = !!(book.lent_to);
 
     body.innerHTML = `
       <div class="modal-left">
@@ -627,23 +623,63 @@ class BookcasePanel extends HTMLElement {
           <input type="text" id="edit-title" class="text-input" value="${book.title || ''}" placeholder="Titul...">
         </div>
         <div class="form-group">
-          <label>AUTOR (oddělit čárkou)</label>
-          <input type="text" id="edit-author" class="text-input" value="${(book.authors || []).join(', ')}" placeholder="Jméno...">
+          <label>PODNÁZEV</label>
+          <input type="text" id="edit-subtitle" class="text-input" value="${book.subtitle || ''}" placeholder="Podnázev...">
+        </div>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+          <div class="form-group">
+            <label>AUTOR (oddělit čárkou)</label>
+            <input type="text" id="edit-author" class="text-input" value="${(book.authors || []).join(', ')}" placeholder="Jméno...">
+          </div>
+          <div class="form-group">
+            <label>NAKLADATELSTVÍ</label>
+            <input type="text" id="edit-publisher" class="text-input" value="${book.publisher || ''}" placeholder="Nakladatel...">
+          </div>
+        </div>
+        <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px;">
+          <div class="form-group">
+            <label>ROK VYDÁNÍ</label>
+            <input type="text" id="edit-year" class="text-input" value="${book.year || ''}" placeholder="2024">
+          </div>
+          <div class="form-group">
+            <label>JAZYK</label>
+            <input type="text" id="edit-language" class="text-input" value="${book.language || ''}" placeholder="Čeština">
+          </div>
+          <div class="form-group">
+            <label>ISBN</label>
+            <input type="text" id="edit-isbn" class="text-input" value="${book.isbn || ''}" placeholder="978..." disabled>
+          </div>
+        </div>
+        <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px;">
+          <div class="form-group">
+            <label>POČET STRAN</label>
+            <input type="number" id="edit-pages" class="text-input" value="${book.page_count || 0}" min="0" step="1">
+          </div>
+          <div class="form-group">
+            <label>POČET VÝTISKŮ</label>
+            <input type="number" id="edit-count" class="text-input" value="${book.count || 1}" min="0" step="1">
+          </div>
+          <div class="form-group">
+            <label>DATUM PŘEČTENÍ</label>
+            <input type="date" id="edit-date-read" class="text-input" value="${book.date_read || ''}">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>ŽÁNR (oddělit čárkou)</label>
+          <input type="text" id="edit-genre" class="text-input" value="${genres}" placeholder="Fantasy, Sci-fi...">
         </div>
         <div class="form-group">
           <label>URL OBÁLKY</label>
           <input type="text" id="edit-cover-url" class="text-input" value="${book.cover_url || ''}" placeholder="https://...">
         </div>
-        
+        <div class="form-group">
+          <label>ODKAZ NA KNIHU</label>
+          <input type="text" id="edit-url" class="text-input" value="${book.url || ''}" placeholder="https://...">
+        </div>
+
         <div class="toggle-row">
-          <div style="flex:1;">
-            <div class="toggle-btn" id="toggle-read">Přečetl jsem</div>
-            <div class="user-list" id="read-users"></div>
-          </div>
-          <div style="flex:1;">
-            <div class="toggle-btn" id="toggle-wish">Chci přečíst</div>
-            <div class="user-list" id="wish-users"></div>
-          </div>
+          <div style="flex:1;"><div class="toggle-btn" id="toggle-read">Přečetl jsem</div><div class="user-list" id="read-users"></div></div>
+          <div style="flex:1;"><div class="toggle-btn" id="toggle-wish">Chci přečíst</div><div class="user-list" id="wish-users"></div></div>
         </div>
 
         <div class="form-group">
@@ -653,7 +689,7 @@ class BookcasePanel extends HTMLElement {
           </div>
         </div>
 
-        <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 15px;">
           <div class="form-group">
             <label>STAV KNIHY</label>
             <select id="edit-status">
@@ -664,24 +700,29 @@ class BookcasePanel extends HTMLElement {
             </select>
           </div>
           <div class="form-group">
-            <label>PŮJČENO KOMU</label>
-            <input type="text" id="edit-lent" class="text-input" value="${book.lent_to || ''}" placeholder="Jméno...">
+            <label>PŮJČENÍ</label>
+            ${isLent
+              ? `<div style="display:flex; align-items:center; gap:8px;">
+                   <span style="background:#ff9800; color:white; padding:6px 12px; border-radius:6px; font-size:0.85rem; font-weight:600;">
+                     📦 ${book.lent_to}${book.lent_until ? ' (do ' + book.lent_until + ')' : ''}
+                   </span>
+                   <button class="action-btn" id="btn-return" style="background:#4caf50; padding:6px 14px; font-size:0.8rem;">Vráceno</button>
+                 </div>`
+              : `<div style="display:flex; gap:8px;">
+                   <input type="text" id="edit-lent" class="text-input" value="" placeholder="Komu..." style="flex:1;">
+                   <input type="date" id="edit-lent-until" class="text-input" value="" style="flex:1;">
+                 </div>`
+            }
           </div>
         </div>
 
         <div class="form-group">
-          <label>VRÁTIT DO</label>
-          <input type="date" id="edit-lent-until" class="text-input" value="${book.lent_until || ''}">
-        </div>
-
-        <div class="form-group">
           <label>POZNÁMKY</label>
-          <textarea id="edit-notes" rows="3" placeholder="Vaše poznámky...">${book.notes || ''}</textarea>
+          <textarea id="edit-notes" rows="2" placeholder="Vaše poznámky...">${book.notes || ''}</textarea>
         </div>
-
         <div class="form-group">
-          <label>POPIS (Z INTERNETU)</label>
-          <textarea id="edit-description" rows="5" placeholder="Popis knihy...">${book.description || ''}</textarea>
+          <label>POPIS</label>
+          <textarea id="edit-description" rows="3" placeholder="Popis knihy...">${book.description || ''}</textarea>
         </div>
 
         <div style="display:flex; gap:12px; margin-top:10px;">
@@ -693,7 +734,7 @@ class BookcasePanel extends HTMLElement {
 
     body.querySelector('#toggle-read').onclick = () => this.toggleUser(book.id, 'read');
     body.querySelector('#toggle-wish').onclick = () => this.toggleUser(book.id, 'wish');
-    
+
     const starContainer = body.querySelector('#edit-rating');
     starContainer.querySelectorAll('span').forEach(star => {
       star.onclick = () => {
@@ -705,9 +746,18 @@ class BookcasePanel extends HTMLElement {
       };
     });
 
+    // Vráceno button
+    const returnBtn = body.querySelector('#btn-return');
+    if (returnBtn) {
+      returnBtn.onclick = () => {
+        this._hass.callService('bookcase', 'update_book', { book_id: book.id, lent_to: null, lent_until: null });
+        this.modal.classList.remove('open');
+        this.showToast('Kniha vrácena!', 'success');
+      };
+    }
+
     body.querySelector('#save-btn').onclick = () => this.saveBook(book.id);
     if (!this._manualMode) body.querySelector('#modal-delete-btn').onclick = () => this.deleteBook(book.id);
-    
     this.updateToggleButtons();
     this.modal.classList.add('open');
   }
@@ -760,7 +810,7 @@ class BookcasePanel extends HTMLElement {
             <div style="font-weight:bold; overflow:hidden; text-overflow:ellipsis; width:100%; max-height: 40px;">${book.title}</div>
           </div>
           <div class="status-badge" style="background:${statusColors[book.status] || '#666'}">${statusLabels[book.status] || ''}</div>
-          ${book.lent_to ? `<div class="lent-badge">PŮJČENO: ${book.lent_to}</div>` : ''}
+          ${book.lent_to ? `<div class="lent-badge">📦 ${book.lent_to}${book.lent_until ? ' · do ' + book.lent_until : ''}</div>` : ''}
         </div>
         <div class="book-title">${book.title}</div>
         <div style="font-size:0.75rem; color:var(--secondary-text-color); margin-top:4px; display:flex; justify-content:space-between;">

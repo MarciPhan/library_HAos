@@ -32,12 +32,16 @@ async def async_setup_entry(hass: HomeAssistant, entry):
             # Máme ji už v knihovně → zkopírujeme metadata (okamžité, bez internetu)
             book_data = {
                 "title": existing_copy.get("title"),
+                "subtitle": existing_copy.get("subtitle", ""),
                 "authors": existing_copy.get("authors", []),
                 "publishers": [existing_copy.get("publisher")] if existing_copy.get("publisher") else [],
                 "publish_date": existing_copy.get("year"),
                 "pages": existing_copy.get("page_count"),
                 "cover_url": existing_copy.get("cover_url"),
                 "description": existing_copy.get("description"),
+                "language": existing_copy.get("language", ""),
+                "genres": existing_copy.get("genre", []),
+                "url": existing_copy.get("url", ""),
             }
             hass.bus.async_fire("bookcase_info", {"message": f"Další výtisk: {existing_copy.get('title', isbn)}"})
             _LOGGER.info("Bookcase: Adding another copy of ISBN %s (%s)", isbn, existing_copy.get("title"))
@@ -54,14 +58,21 @@ async def async_setup_entry(hass: HomeAssistant, entry):
             "id": book_id,
             "isbn": isbn,
             "title": book_data.get("title", f"Kniha: {isbn}") if book_data else f"Kniha: {isbn}",
+            "subtitle": book_data.get("subtitle", "") if book_data else "",
             "authors": book_data.get("authors", []) if book_data else [],
             "publisher": book_data.get("publishers", [""])[0] if book_data and book_data.get("publishers") else "",
             "year": book_data.get("publish_date", "") if book_data else "",
-            "language": "cs",
+            "language": book_data.get("language", "Čeština") if book_data else "Čeština",
             "page_count": book_data.get("pages", 0) if book_data else 0,
             "cover_url": book_data.get("cover_url", "") if book_data else "",
             "description": book_data.get("description", "") if book_data else "",
+            "genre": book_data.get("genres", []) if book_data else [],
+            "url": book_data.get("url", "") if book_data else "",
+            "count": 1,
             "status": STATUS_TO_READ,
+            "rating": 0,
+            "notes": "",
+            "date_read": "",
             "added_at": dt_util.now().isoformat(),
             "read_by": [],
             "wishlist_by": []
@@ -79,6 +90,7 @@ async def async_setup_entry(hass: HomeAssistant, entry):
             "id": book_id,
             "isbn": call.data.get("isbn", ""),
             "title": call.data.get("title", "Nová kniha"),
+            "subtitle": call.data.get("subtitle", ""),
             "authors": call.data.get("authors", []),
             "publisher": call.data.get("publisher", ""),
             "year": call.data.get("year", ""),
@@ -88,6 +100,11 @@ async def async_setup_entry(hass: HomeAssistant, entry):
             "status": call.data.get("status", STATUS_TO_READ),
             "notes": call.data.get("notes", ""),
             "description": call.data.get("description", ""),
+            "genre": call.data.get("genre", []),
+            "url": call.data.get("url", ""),
+            "count": call.data.get("count", 1),
+            "rating": call.data.get("rating", 0),
+            "date_read": call.data.get("date_read", ""),
             "added_at": dt_util.now().isoformat(),
             "read_by": [],
             "wishlist_by": []
@@ -103,7 +120,10 @@ async def async_setup_entry(hass: HomeAssistant, entry):
 
         old_lent_to = data["books"][book_id].get("lent_to")
         updates = {}
-        for key in ["status", "is_read", "date_read", "rating", "notes", "description", "lent_to", "lent_until", "count", "genre", "read_by", "wishlist_by", "title", "authors", "cover_url"]:
+        for key in ["status", "is_read", "date_read", "rating", "notes", "description",
+                    "lent_to", "lent_until", "count", "genre", "read_by", "wishlist_by",
+                    "title", "subtitle", "authors", "cover_url", "publisher", "year",
+                    "language", "page_count", "url", "isbn"]:
             if key in call.data:
                 updates[key] = call.data[key]
 
@@ -157,7 +177,7 @@ async def async_setup_entry(hass: HomeAssistant, entry):
                 frontend_url_path="bookcase",
                 config={"_panel_custom": {
                     "name": "bookcase-panel",
-                    "module_url": "/bookcase_static/panel.js?v=4.0"
+                    "module_url": "/bookcase_static/panel.js?v=5.0"
                 }},
                 require_admin=False,
             )
