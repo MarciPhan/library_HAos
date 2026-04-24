@@ -292,11 +292,9 @@ async def async_setup_entry(hass: HomeAssistant, entry):
     
     if (True): # Vždy zkusíme zaregistrovat pro jistotu, HA si s duplicitou poradí
         try:
-            await hass.http.async_register_static_paths([
-                StaticPathConfig("/bookcase_static", hass.config.path("custom_components/bookcase/www"), False)
-            ])
-        except:
-            pass
+            hass.http.register_static_path("/bookcase_static", hass.config.path("custom_components/bookcase/www"), cache_headers=False)
+        except Exception as e:
+            _LOGGER.warning("Bookcase static path registration warning: %s", e)
         
         hass.http.register_view(BookcaseCoverView(hass, data["books"]))
         

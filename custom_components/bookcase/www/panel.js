@@ -854,6 +854,7 @@ class BookcasePanel extends HTMLElement {
     if (!this._manualMode) this._manualMode = false;
     const body = this.querySelector('#modal-body');
     const userName = this._hass.user.name || this._hass.user.id || 'Uživatel';
+    const statusLabels = { 'to_read': 'MÁME', 'reading': 'ČTU', 'read': 'PŘEČTENO', 'wishlist': 'CHCI' };
     
     body.dataset.readBy = JSON.stringify(Array.isArray(book.read_by) ? book.read_by : (book.read_by ? [book.read_by] : []));
     body.dataset.wishlistBy = JSON.stringify(Array.isArray(book.wishlist_by) ? book.wishlist_by : []);
@@ -1109,10 +1110,9 @@ class BookcasePanel extends HTMLElement {
   render() {
     if (!this._hass) return;
     
-    // Dynamické hledání senzoru, pokud se jmenuje jinak (např. po re-instalaci)
     let state = this._hass.states['sensor.bookcase_total_books'];
     if (!state) {
-      const sensorId = Object.keys(this._hass.states).find(s => s.startsWith('sensor.bookcase_') && this._hass.states[s].attributes.books);
+      const sensorId = Object.keys(this._hass.states).find(s => s.startsWith('sensor.bookcase_') && this._hass.states[s].attributes && this._hass.states[s].attributes.books);
       if (sensorId) state = this._hass.states[sensorId];
     }
 
