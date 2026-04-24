@@ -255,7 +255,8 @@ class BookcasePanel extends HTMLElement {
           display: none;
           position: fixed;
           top: 0; left: 0; width: 100%; height: 100%;
-          background: rgba(0,0,0,0.7);
+          background: rgba(0,0,0,0.75);
+          backdrop-filter: blur(4px);
           z-index: 1000;
           align-items: center; justify-content: center;
           padding: 20px;
@@ -263,58 +264,110 @@ class BookcasePanel extends HTMLElement {
         .modal.open { display: flex; }
         .modal-content {
           background: var(--card-background-color);
-          max-width: 850px;
+          max-width: 950px;
           width: 100%;
-          border-radius: 12px;
+          border-radius: 16px;
           display: flex;
           overflow: hidden;
           position: relative;
-          max-height: 90vh;
+          max-height: 92vh;
           border: 1px solid var(--divider-color);
+          box-shadow: 0 25px 60px rgba(0,0,0,0.5);
         }
         .modal-close {
-          position: absolute; top: 15px; right: 15px;
-          width: 32px; height: 32px; border-radius: 50%;
-          background: var(--secondary-background-color);
+          position: absolute; top: 12px; right: 12px;
+          width: 36px; height: 36px; border-radius: 50%;
+          background: rgba(0,0,0,0.4);
+          color: white; font-size: 18px;
           display: flex; align-items: center; justify-content: center;
           cursor: pointer; z-index: 11;
+          transition: background 0.2s;
         }
-        .modal-body { display: flex; width: 100%; overflow-y: auto; }
-        .modal-left { width: 280px; flex-shrink: 0; background: var(--secondary-background-color); position: relative; }
+        .modal-close:hover { background: rgba(0,0,0,0.7); }
+        .modal-body { display: flex; width: 100%; }
+        .modal-left {
+          width: 300px; flex-shrink: 0;
+          background: var(--secondary-background-color);
+          position: relative;
+          display: flex; align-items: center; justify-content: center;
+        }
         .modal-left img { width: 100%; height: 100%; object-fit: cover; }
-        .modal-right { padding: 30px; flex-grow: 1; display: flex; flex-direction: column; gap: 20px; }
+        .modal-right {
+          padding: 28px 30px;
+          flex-grow: 1;
+          display: flex; flex-direction: column; gap: 0;
+          overflow-y: auto;
+          max-height: 92vh;
+        }
+
+        .section-title {
+          font-size: 0.65rem; font-weight: 800; text-transform: uppercase;
+          letter-spacing: 1.5px; color: var(--primary-color);
+          margin: 20px 0 10px 0; padding-bottom: 6px;
+          border-bottom: 1px solid var(--divider-color);
+        }
+        .section-title:first-child { margin-top: 0; }
         
-        .form-group { display: flex; flex-direction: column; gap: 6px; }
-        label { font-size: 0.75rem; font-weight: 700; color: var(--secondary-text-color); text-transform: uppercase; }
+        .form-group { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; }
+        .form-row { display: grid; gap: 12px; margin-bottom: 12px; }
+        .form-row.cols-2 { grid-template-columns: 1fr 1fr; }
+        .form-row.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+        
+        label {
+          font-size: 0.68rem; font-weight: 700;
+          color: var(--secondary-text-color);
+          text-transform: uppercase; letter-spacing: 0.5px;
+        }
         select, textarea, .text-input {
           background: var(--secondary-background-color);
           border: 1px solid var(--divider-color);
           color: var(--primary-text-color);
-          padding: 10px;
-          border-radius: 6px;
-          font-size: 0.9rem;
+          padding: 9px 12px;
+          border-radius: 8px;
+          font-size: 0.85rem;
           outline: none;
+          transition: border-color 0.2s;
         }
+        select:focus, textarea:focus, .text-input:focus {
+          border-color: var(--primary-color);
+        }
+        .text-input:disabled {
+          opacity: 0.5; cursor: not-allowed;
+        }
+        textarea { resize: vertical; font-family: inherit; }
         
-        .rating-stars { display: flex; gap: 4px; font-size: 1.4rem; color: #ffca28; cursor: pointer; }
+        .meta-chips {
+          display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px;
+        }
+        .meta-chip {
+          background: var(--secondary-background-color);
+          border: 1px solid var(--divider-color);
+          padding: 4px 10px; border-radius: 20px;
+          font-size: 0.75rem; color: var(--secondary-text-color);
+          white-space: nowrap;
+        }
+        .meta-chip b { color: var(--primary-text-color); margin-left: 4px; }
         
-        .toggle-row { display: flex; gap: 10px; }
+        .rating-stars { display: flex; gap: 4px; font-size: 1.5rem; color: #ffca28; cursor: pointer; }
+        
+        .toggle-row { display: flex; gap: 10px; margin-bottom: 12px; }
         .toggle-btn {
           flex: 1;
-          padding: 12px;
+          padding: 10px;
           border-radius: 8px;
           border: 1px solid var(--divider-color);
           background: var(--secondary-background-color);
           color: var(--primary-text-color);
           cursor: pointer;
-          font-weight: bold;
+          font-weight: 600; font-size: 0.85rem;
           text-align: center;
           transition: all 0.2s;
         }
+        .toggle-btn:hover { border-color: var(--primary-color); }
         .toggle-btn.active-read { background: #4caf50; color: white; border-color: #4caf50; }
         .toggle-btn.active-wish { background: #03a9f4; color: white; border-color: #03a9f4; }
         
-        .user-list { font-size: 0.8rem; color: var(--secondary-text-color); margin-top: 4px; }
+        .user-list { font-size: 0.75rem; color: var(--secondary-text-color); margin-top: 3px; text-align: center; }
         
         .spinner {
           width: 14px; height: 14px;
@@ -326,30 +379,25 @@ class BookcasePanel extends HTMLElement {
         @keyframes spin { to { transform: rotate(360deg); } }
 
         .toast {
-          position: fixed;
-          bottom: 30px;
-          left: 50%;
+          position: fixed; bottom: 30px; left: 50%;
           transform: translateX(-50%) translateY(100px);
-          padding: 12px 24px;
-          border-radius: 8px;
-          color: white;
-          font-weight: 600;
-          font-size: 0.9rem;
-          z-index: 9999;
-          pointer-events: none;
-          opacity: 0;
+          padding: 12px 24px; border-radius: 8px;
+          color: white; font-weight: 600; font-size: 0.9rem;
+          z-index: 9999; pointer-events: none; opacity: 0;
           transition: transform 0.3s ease, opacity 0.3s ease;
-          max-width: 90vw;
-          text-align: center;
+          max-width: 90vw; text-align: center;
         }
-        .toast.visible {
-          transform: translateX(-50%) translateY(0);
-          opacity: 1;
-        }
+        .toast.visible { transform: translateX(-50%) translateY(0); opacity: 1; }
         .toast.success { background: #4caf50; }
         .toast.warning { background: #ff9800; }
         .toast.error { background: #f44336; }
         .toast.info { background: #2196f3; }
+
+        @media (max-width: 700px) {
+          .modal-body { flex-direction: column; }
+          .modal-left { width: 100%; height: 200px; }
+          .form-row.cols-3 { grid-template-columns: 1fr 1fr; }
+        }
       </style>
       
       <div class="container">

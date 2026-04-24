@@ -153,14 +153,18 @@ def _merge_results(isbn: str, results: list[dict]) -> dict:
         url = res.get("cover_url")
         if url:
             score = 10  # default
-            if "knihovny.cz" in url:
-                score = 90
-            elif "googleapis.com" in url or "google" in url:
-                # Preferujeme vyšší rozlišení
-                score = 80 if "zoom=1" not in url else 60
+            if "googleapis.com" in url or "books.google" in url:
+                # Google Books má nejspolehlivější obálky
+                score = 100 if "zoom=1" not in url else 80
             elif "openlibrary.org" in url:
                 score = 70
+            elif "knihovny.cz" in url:
+                # Knihovny.cz často vrací placeholder PNG
+                score = 30
             cover_candidates.append((score, url))
+
+    # Fallback: přímý Open Library cover URL (existuje vždy, i když API nevrátilo data)
+    cover_candidates.append((20, f"https://covers.openlibrary.org/b/isbn/{isbn}-L.jpg"))
 
     if cover_candidates:
         cover_candidates.sort(key=lambda x: x[0], reverse=True)
