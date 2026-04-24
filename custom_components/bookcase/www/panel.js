@@ -43,10 +43,18 @@ class BookcasePanel extends HTMLElement {
     this._lastState = newState;
     
     if (!this.content) {
-      this.initStructure();
+      try {
+        this.initStructure();
+      } catch (err) {
+        console.error("Bookcase structure init failed:", err);
+      }
     }
 
-    // Posloucháme bookcase_error eventy (duplicitní ISBN atd.)
+    try {
+      this.render();
+    } catch (err) {
+      console.error("Bookcase render failed:", err);
+    }
     if (!this._eventListenerBound && hass.connection) {
       this._eventListenerBound = true;
       hass.connection.subscribeEvents((ev) => {
@@ -1088,11 +1096,22 @@ class BookcasePanel extends HTMLElement {
   }
 
   render() {
-    const state = this._hass.states['sensor.bookcase_total_books'];
-    if (!state || !state.attributes.books) return;
+    if (!this._hass) return;
+    
+    // Dynamické hledání senzoru, pokud se jmenuje jinak (např. po re-instalaci)
+    let state = this._hass.states['sensor.bookcase_total_books'];
+    if (!state) {
+      const sensorId = Object.keys(this._hass.states).find(s => s.startsWith('sensor.bookcase_') && this._hass.states[s].attributes.books);
+      if (sensorId) state = this._hass.states[sensorId];
+    }
+
+    if (!state || !state.attributes || !state.attributes.books) {
+      if (this.querySelector('#stats')) this.querySelector('#stats').innerText = 'Načítám data...';
+      return;
+    }
 
     const books = state.attributes.books;
-    const userName = this._hass.user.name || this._hass.user.id || 'Uživatel';
+    const userName = this._hass.user ? (this._hass.user.name || this._hass.user.id || 'Uživatel') : 'Uživatel';
     
     // Filter out optimistic deletions
     books = books.filter(b => !this._optimisticDeleted.has(b.id));

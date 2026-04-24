@@ -284,10 +284,13 @@ async def async_setup_entry(hass: HomeAssistant, entry):
     hass.data.setdefault(DOMAIN, {})
     hass.data[DOMAIN][entry.entry_id] = {"books": data["books"]}
     
-    if "static_path_registered" not in hass.data[DOMAIN]:
-        await hass.http.async_register_static_paths([
-            StaticPathConfig("/bookcase_static", hass.config.path("custom_components/bookcase/www"), False)
-        ])
+    if (True): # Vždy zkusíme zaregistrovat pro jistotu, HA si s duplicitou poradí
+        try:
+            await hass.http.async_register_static_paths([
+                StaticPathConfig("/bookcase_static", hass.config.path("custom_components/bookcase/www"), False)
+            ])
+        except:
+            pass
         
         hass.http.register_view(BookcaseCoverView(hass, data["books"]))
         
@@ -301,7 +304,7 @@ async def async_setup_entry(hass: HomeAssistant, entry):
                 frontend_url_path="bookcase",
                 config={"_panel_custom": {
                     "name": "bookcase-panel",
-                    "module_url": "/bookcase_static/panel.js?v=7.0"
+                    "module_url": "/bookcase_static/panel.js?v=7.1"
                 }},
                 require_admin=False,
             )
