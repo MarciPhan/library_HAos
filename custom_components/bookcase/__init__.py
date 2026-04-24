@@ -64,11 +64,17 @@ async def async_setup_entry(hass: HomeAssistant, entry):
     for book_id, book in data.get("books", {}).items():
         # 1. Agresivnější migrace titulu (rozdělení podle dvojtečky)
         current_title = book.get("title", "")
-        if ":" in current_title and not book.get("subtitle"):
+        if ":" in current_title:
             parts = current_title.split(":", 1)
-            book["title"] = parts[0].strip()
-            book["subtitle"] = parts[1].strip()
-            _LOGGER.info("Migrating title for book %s: %s -> %s | %s", 
+            new_title = parts[0].strip()
+            new_subtitle = parts[1].strip()
+            # Pokud už podnázev existoval, přidáme ho k novému
+            if book.get("subtitle") and book["subtitle"] != new_subtitle:
+                book["subtitle"] = f"{new_subtitle} - {book['subtitle']}"
+            else:
+                book["subtitle"] = new_subtitle
+            book["title"] = new_title
+            _LOGGER.info("Migrated title for book %s: %s -> %s | %s", 
                          book_id, current_title, book["title"], book["subtitle"])
             migrated = True
         
@@ -304,7 +310,7 @@ async def async_setup_entry(hass: HomeAssistant, entry):
                 frontend_url_path="bookcase",
                 config={"_panel_custom": {
                     "name": "bookcase-panel",
-                    "module_url": "/bookcase_static/panel.js?v=7.2"
+                    "module_url": "/bookcase_static/panel.js?v=7.4"
                 }},
                 require_admin=False,
             )

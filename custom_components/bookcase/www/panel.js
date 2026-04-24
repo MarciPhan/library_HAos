@@ -12,20 +12,20 @@ class BookcasePanel extends HTMLElement {
 
   _formatTitle(book) {
     if (!book) return '';
-    const title = (book.title || '').toString();
-    const subtitle = (book.subtitle || '').toString();
+    let title = (book.title || '').toString();
+    let subtitle = (book.subtitle || '').toString();
     
-    // Pokud máme podnázev v databázi, použijeme ho
-    if (subtitle) {
-      return `${title}<br><span style="font-size:0.8em; font-weight:400; opacity:0.7; display:block; margin-top:2px; line-height:1.2;">${subtitle}</span>`;
-    }
-    
-    // Fallback: Pokud podnázev není, ale v titulu je dvojtečka, rozdělíme to za běhu
+    // Pokud je v hlavním názvu dvojtečka, rozdělíme ji (často se to stává po importu)
     if (title.includes(':')) {
       const parts = title.split(':');
-      const main = parts[0].trim();
-      const sub = parts.slice(1).join(':').trim();
-      return `${main}<br><span style="font-size:0.8em; font-weight:400; opacity:0.7; display:block; margin-top:2px; line-height:1.2;">${sub}</span>`;
+      title = parts[0].strip ? parts[0].trim() : parts[0];
+      const extraSub = parts.slice(1).join(':').trim();
+      // Pokud nemáme podnázev, použijeme ten z titulu. Jinak ho tam necháme.
+      if (!subtitle) subtitle = extraSub;
+    }
+    
+    if (subtitle) {
+      return `${title}<br><span style="font-size:0.8em; font-weight:400; opacity:0.7; display:block; margin-top:2px; line-height:1.2;">${subtitle}</span>`;
     }
     
     return title;
@@ -830,6 +830,8 @@ class BookcasePanel extends HTMLElement {
     }
 
     this.updateToggleButtons();
+    // Auto-save on toggle
+    this.saveBook(bookId);
   }
 
   updateToggleButtons() {
@@ -1048,6 +1050,8 @@ class BookcasePanel extends HTMLElement {
         body.dataset.readBy = JSON.stringify(readList);
         body.dataset.wishlistBy = JSON.stringify(wishList);
         this.updateToggleButtons();
+        // Auto-save on status change
+        this.saveBook(book.id);
       };
     }
 
@@ -1059,8 +1063,16 @@ class BookcasePanel extends HTMLElement {
         starContainer.querySelectorAll('span').forEach(s => {
           s.innerText = parseInt(s.dataset.n) <= n ? '★' : '☆';
         });
+        // Auto-save on rating change
+        this.saveBook(book.id);
       };
     });
+
+    const conditionSelect = body.querySelector('#edit-condition');
+    if (conditionSelect) {
+      conditionSelect.onchange = () => this.saveBook(book.id);
+    }
+  }
 
     // Vráceno button – optimistic UI
     const returnBtn = body.querySelector('#btn-return');
@@ -1170,7 +1182,7 @@ class BookcasePanel extends HTMLElement {
       card.onclick = () => { this._manualMode = false; this.openDetail(book); };
       
       const statusColors = { 'to_read': '#2196f3', 'reading': '#4caf50', 'read': '#9c27b0', 'wishlist': '#ff9800' };
-      const statusLabels = { 'to_read': 'MÁME', 'reading': 'ČTU', 'read': 'HOTOVO', 'wishlist': 'CHCI' };
+      const statusLabels = { 'to_read': 'MÁME', 'reading': 'ČTU', 'read': 'PŘEČTENO', 'wishlist': 'CHCI' };
       
       card.innerHTML = `
         <div class="cover-wrapper">
