@@ -661,121 +661,128 @@ class BookcasePanel extends HTMLElement {
       <div class="modal-left">
         <img src="${book.cover_url || ''}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
         <div class="cover-fallback" style="display:none; font-size: 14px;">
-          <span style="font-size: 40px; margin-bottom: 10px;">📖</span>
+          <span style="font-size: 48px; margin-bottom: 10px;">📖</span>
           ${book.title || 'Nová kniha'}
         </div>
       </div>
       <div class="modal-right">
+
+        <div class="section-title">📚 Základní informace</div>
         <div class="form-group">
-          <label>NÁZEV KNIHY</label>
-          <input type="text" id="edit-title" class="text-input" value="${book.title || ''}" placeholder="Titul...">
+          <label>Název</label>
+          <input type="text" id="edit-title" class="text-input" value="${book.title || ''}" placeholder="Titul knihy...">
         </div>
-        <div class="form-group">
-          <label>PODNÁZEV</label>
-          <input type="text" id="edit-subtitle" class="text-input" value="${book.subtitle || ''}" placeholder="Podnázev...">
-        </div>
-        <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+        <div class="form-row cols-2">
           <div class="form-group">
-            <label>AUTOR (oddělit čárkou)</label>
-            <input type="text" id="edit-author" class="text-input" value="${(book.authors || []).join(', ')}" placeholder="Jméno...">
+            <label>Podnázev</label>
+            <input type="text" id="edit-subtitle" class="text-input" value="${book.subtitle || ''}" placeholder="Podnázev...">
           </div>
           <div class="form-group">
-            <label>NAKLADATELSTVÍ</label>
+            <label>Autor</label>
+            <input type="text" id="edit-author" class="text-input" value="${(book.authors || []).join(', ')}" placeholder="Jméno (čárkou oddělit)">
+          </div>
+        </div>
+        <div class="form-row cols-3">
+          <div class="form-group">
+            <label>Nakladatelství</label>
             <input type="text" id="edit-publisher" class="text-input" value="${book.publisher || ''}" placeholder="Nakladatel...">
           </div>
-        </div>
-        <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px;">
           <div class="form-group">
-            <label>ROK VYDÁNÍ</label>
+            <label>Rok vydání</label>
             <input type="text" id="edit-year" class="text-input" value="${book.year || ''}" placeholder="2024">
           </div>
           <div class="form-group">
-            <label>JAZYK</label>
+            <label>Jazyk</label>
             <input type="text" id="edit-language" class="text-input" value="${book.language || ''}" placeholder="Čeština">
+          </div>
+        </div>
+        <div class="form-row cols-2">
+          <div class="form-group">
+            <label>Žánr</label>
+            <input type="text" id="edit-genre" class="text-input" value="${genres}" placeholder="Fantasy, Sci-fi...">
           </div>
           <div class="form-group">
             <label>ISBN</label>
-            <input type="text" id="edit-isbn" class="text-input" value="${book.isbn || ''}" placeholder="978..." disabled>
+            <input type="text" id="edit-isbn" class="text-input" value="${book.isbn || ''}" disabled>
           </div>
         </div>
-        <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px;">
+
+        <div class="section-title">📖 Detaily</div>
+        <div class="form-row cols-3">
           <div class="form-group">
-            <label>POČET STRAN</label>
+            <label>Počet stran</label>
             <input type="number" id="edit-pages" class="text-input" value="${book.page_count || 0}" min="0" step="1">
           </div>
           <div class="form-group">
-            <label>POČET VÝTISKŮ</label>
+            <label>Počet výtisků</label>
             <input type="number" id="edit-count" class="text-input" value="${book.count || 1}" min="0" step="1">
           </div>
           <div class="form-group">
-            <label>DATUM PŘEČTENÍ</label>
+            <label>Datum přečtení</label>
             <input type="date" id="edit-date-read" class="text-input" value="${book.date_read || ''}">
           </div>
         </div>
-        <div class="form-group">
-          <label>ŽÁNR (oddělit čárkou)</label>
-          <input type="text" id="edit-genre" class="text-input" value="${genres}" placeholder="Fantasy, Sci-fi...">
-        </div>
-        <div class="form-group">
-          <label>URL OBÁLKY</label>
-          <input type="text" id="edit-cover-url" class="text-input" value="${book.cover_url || ''}" placeholder="https://...">
-        </div>
-        <div class="form-group">
-          <label>ODKAZ NA KNIHU</label>
-          <input type="text" id="edit-url" class="text-input" value="${book.url || ''}" placeholder="https://...">
-        </div>
-
-        <div class="toggle-row">
-          <div style="flex:1;"><div class="toggle-btn" id="toggle-read">Přečetl jsem</div><div class="user-list" id="read-users"></div></div>
-          <div style="flex:1;"><div class="toggle-btn" id="toggle-wish">Chci přečíst</div><div class="user-list" id="wish-users"></div></div>
-        </div>
-
-        <div class="form-group">
-          <label>HODNOCENÍ</label>
-          <div class="rating-stars" id="edit-rating" data-value="${rating}">
-            ${[1,2,3,4,5].map(n => `<span data-n="${n}">${n <= rating ? '★' : '☆'}</span>`).join('')}
+        <div class="form-row cols-2">
+          <div class="form-group">
+            <label>URL obálky</label>
+            <input type="text" id="edit-cover-url" class="text-input" value="${book.cover_url || ''}" placeholder="https://...">
+          </div>
+          <div class="form-group">
+            <label>Odkaz na knihu</label>
+            <input type="text" id="edit-url" class="text-input" value="${book.url || ''}" placeholder="https://...">
           </div>
         </div>
 
-        <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+        <div class="section-title">⭐ Stav a hodnocení</div>
+        <div class="toggle-row">
+          <div style="flex:1;"><div class="toggle-btn" id="toggle-read">✓ Přečetl jsem</div><div class="user-list" id="read-users"></div></div>
+          <div style="flex:1;"><div class="toggle-btn" id="toggle-wish">♡ Chci přečíst</div><div class="user-list" id="wish-users"></div></div>
+        </div>
+        <div class="form-row cols-2">
           <div class="form-group">
-            <label>STAV KNIHY</label>
+            <label>Hodnocení</label>
+            <div class="rating-stars" id="edit-rating" data-value="${rating}">
+              ${[1,2,3,4,5].map(n => `<span data-n="${n}">${n <= rating ? '★' : '☆'}</span>`).join('')}
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Stav knihy</label>
             <select id="edit-status">
-              <option value="to_read" ${book.status === 'to_read' ? 'selected' : ''}>Máme v knihovně</option>
-              <option value="reading" ${book.status === 'reading' ? 'selected' : ''}>Právě čtu</option>
-              <option value="read" ${book.status === 'read' ? 'selected' : ''}>Přečteno (všichni)</option>
-              <option value="wishlist" ${book.status === 'wishlist' ? 'selected' : ''}>Na Wishlistu (nemáme ji)</option>
+              <option value="to_read" ${book.status === 'to_read' ? 'selected' : ''}>📗 Máme v knihovně</option>
+              <option value="reading" ${book.status === 'reading' ? 'selected' : ''}>📖 Právě čtu</option>
+              <option value="read" ${book.status === 'read' ? 'selected' : ''}>✅ Přečteno</option>
+              <option value="wishlist" ${book.status === 'wishlist' ? 'selected' : ''}>💫 Wishlist</option>
             </select>
           </div>
-          <div class="form-group">
-            <label>PŮJČENÍ</label>
-            ${isLent
-              ? `<div style="display:flex; align-items:center; gap:8px;">
-                   <span style="background:#ff9800; color:white; padding:6px 12px; border-radius:6px; font-size:0.85rem; font-weight:600;">
-                     📦 ${book.lent_to}${book.lent_until ? ' (do ' + book.lent_until + ')' : ''}
-                   </span>
-                   <button class="action-btn" id="btn-return" style="background:#4caf50; padding:6px 14px; font-size:0.8rem;">Vráceno</button>
-                 </div>`
-              : `<div style="display:flex; gap:8px;">
-                   <input type="text" id="edit-lent" class="text-input" value="" placeholder="Komu..." style="flex:1;">
-                   <input type="date" id="edit-lent-until" class="text-input" value="" style="flex:1;">
-                 </div>`
-            }
-          </div>
+        </div>
+        <div class="form-group">
+          <label>Půjčení</label>
+          ${isLent
+            ? `<div style="display:flex; align-items:center; gap:10px;">
+                 <span style="background:#ff9800; color:white; padding:8px 14px; border-radius:8px; font-size:0.85rem; font-weight:600; flex:1;">
+                   📦 ${book.lent_to}${book.lent_until ? ' · do ' + book.lent_until : ''}
+                 </span>
+                 <button class="action-btn" id="btn-return" style="background:#4caf50; padding:8px 16px; font-size:0.85rem;">✓ Vráceno</button>
+               </div>`
+            : `<div class="form-row cols-2" style="margin:0;">
+                 <input type="text" id="edit-lent" class="text-input" value="" placeholder="Komu půjčit...">
+                 <input type="date" id="edit-lent-until" class="text-input" value="" placeholder="Do kdy...">
+               </div>`
+          }
         </div>
 
+        <div class="section-title">📝 Poznámky</div>
         <div class="form-group">
-          <label>POZNÁMKY</label>
           <textarea id="edit-notes" rows="2" placeholder="Vaše poznámky...">${book.notes || ''}</textarea>
         </div>
         <div class="form-group">
-          <label>POPIS</label>
+          <label>Popis</label>
           <textarea id="edit-description" rows="3" placeholder="Popis knihy...">${book.description || ''}</textarea>
         </div>
 
-        <div style="display:flex; gap:12px; margin-top:10px;">
-          <button class="action-btn" id="save-btn" style="flex-grow:1; height:45px;">${this._manualMode ? 'Přidat knihu' : 'Uložit změny'}</button>
-          ${!this._manualMode ? `<button class="action-btn" id="modal-delete-btn" style="background:#f44336; height:45px;">Smazat</button>` : ''}
+        <div style="display:flex; gap:12px; margin-top:16px;">
+          <button class="action-btn" id="save-btn" style="flex-grow:1; height:48px; font-size:0.95rem; border-radius:10px;">${this._manualMode ? '＋ Přidat knihu' : '💾 Uložit změny'}</button>
+          ${!this._manualMode ? `<button class="action-btn" id="modal-delete-btn" style="background:#f44336; height:48px; border-radius:10px; padding:0 20px;">🗑 Smazat</button>` : ''}
         </div>
       </div>
     `;
