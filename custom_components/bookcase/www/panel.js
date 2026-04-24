@@ -2,9 +2,11 @@ class BookcasePanel extends HTMLElement {
   constructor() {
     super();
     this._loading = false;
+    this._pendingAdds = 0; // Kolik ISBN se právě zpracovává
     this._filter = 'all';
     this._searchQuery = '';
     this._optimisticDeleted = new Set();
+    this._eventListenerBound = false;
   }
 
   set hass(hass) {
@@ -22,8 +24,29 @@ class BookcasePanel extends HTMLElement {
       this.initStructure();
     }
 
+    // Posloucháme bookcase_error eventy (duplicitní ISBN atd.)
+    if (!this._eventListenerBound && hass.connection) {
+      this._eventListenerBound = true;
+      hass.connection.subscribeEvents((ev) => {
+        const msg = ev.data && ev.data.message;
+        if (msg) this.showToast(msg, 'warning');
+        // Snížíme pending counter i při erroru
+        this._pendingAdds = Math.max(0, this._pendingAdds - 1);
+        if (this._pendingAdds === 0) this._loading = false;
+        this.updateButtons();
+      }, 'bookcase_error');
+      hass.connection.subscribeEvents((ev) => {
+        const msg = ev.data && ev.data.message;
+        if (msg) this.showToast(msg, 'info');
+      }, 'bookcase_info');
+    }
+
     if (newState && newState.attributes && newState.attributes.books) {
-      this._loading = false;
+      // Snížíme pending counter při úspěchu (nová kniha přišla ze serveru)
+      if (this._pendingAdds > 0) {
+        this._pendingAdds = Math.max(0, this._pendingAdds - 1);
+        if (this._pendingAdds === 0) this._loading = false;
+      }
       
       // Clear optimistic deletions that are now confirmed by the server
       const serverIds = new Set(newState.attributes.books.map(b => b.id));
@@ -301,6 +324,32 @@ class BookcasePanel extends HTMLElement {
           display: none;
         }
         @keyframes spin { to { transform: rotate(360deg); } }
+
+        .toast {
+          position: fixed;
+          bottom: 30px;
+          left: 50%;
+          transform: translateX(-50%) translateY(100px);
+          padding: 12px 24px;
+          border-radius: 8px;
+          color: white;
+          font-weight: 600;
+          font-size: 0.9rem;
+          z-index: 9999;
+          pointer-events: none;
+          opacity: 0;
+          transition: transform 0.3s ease, opacity 0.3s ease;
+          max-width: 90vw;
+          text-align: center;
+        }
+        .toast.visible {
+          transform: translateX(-50%) translateY(0);
+          opacity: 1;
+        }
+        .toast.success { background: #4caf50; }
+        .toast.warning { background: #ff9800; }
+        .toast.error { background: #f44336; }
+        .toast.info { background: #2196f3; }
       </style>
       
       <div class="container">
@@ -377,12 +426,46 @@ class BookcasePanel extends HTMLElement {
 
   handleAdd() {
     const isbn = this.isbnInput.value.trim();
-    if (isbn && !this._loading) {
-      this._loading = true;
-      this.updateButtons();
-      this._hass.callService('bookcase', 'add_by_isbn', { isbn });
-      this.isbnInput.value = '';
-    }
+    if (!isbn) return;
+
+    // Povolíme rychlé skenování více ISBN po sobě
+    this._pendingAdds++;
+    this._loading = true;
+    this.updateButtons();
+    this._hass.callService('bookcase', 'add_by_isbn', { isbn });
+    this.isbnInput.value = '';
+    this.isbnInput.focus();
+    this.showToast(`Hledám ISBN: ${isbn}…`, 'success');
+
+    // Safety timeout – po 15s resetujeme loading stav
+    setTimeout(() => {
+      if (this._pendingAdds > 0) {
+        this._pendingAdds = 0;
+        this._loading = false;
+        this.updateButtons();
+      }
+    }, 15000);
+  }
+
+  showToast(message, type = 'success') {
+    // Odstraníme předchozí toast pokud existuje
+    const old = this.querySelector('.toast');
+    if (old) old.remove();
+
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    toast.textContent = message;
+    this.appendChild(toast);
+
+    // Trigger animation
+    requestAnimationFrame(() => {
+      toast.classList.add('visible');
+    });
+
+    setTimeout(() => {
+      toast.classList.remove('visible');
+      setTimeout(() => toast.remove(), 300);
+    }, 3000);
   }
 
   updateButtons() {
@@ -390,20 +473,21 @@ class BookcasePanel extends HTMLElement {
     const addSpinner = this.querySelector('#add-spinner');
     const addText = this.querySelector('#add-text');
     if (addBtn) {
-      addBtn.disabled = this._loading;
-      addSpinner.style.display = this._loading ? 'block' : 'none';
-      addText.style.display = this._loading ? 'none' : 'block';
+      // Při ISBN přidávání NEblokujeme tlačítko – umožníme rychlé skenování
+      addBtn.disabled = false;
+      addSpinner.style.display = this._pendingAdds > 0 ? 'block' : 'none';
+      addText.textContent = this._pendingAdds > 0 ? `(${this._pendingAdds})` : 'ISBN';
     }
 
     const saveBtn = this.querySelector('#save-btn');
     const delBtn = this.querySelector('#modal-delete-btn');
     if (saveBtn) {
-      saveBtn.disabled = this._loading;
-      saveBtn.innerText = this._loading ? '...' : (this._manualMode ? 'Přidat knihu' : 'Uložit změny');
+      saveBtn.disabled = this._loading && !this._pendingAdds;
+      saveBtn.innerText = this._loading && !this._pendingAdds ? '...' : (this._manualMode ? 'Přidat knihu' : 'Uložit změny');
     }
     if (delBtn) {
-      delBtn.disabled = this._loading;
-      delBtn.innerText = this._loading ? '...' : 'Smazat';
+      delBtn.disabled = this._loading && !this._pendingAdds;
+      delBtn.innerText = this._loading && !this._pendingAdds ? '...' : 'Smazat';
     }
   }
 

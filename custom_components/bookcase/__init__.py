@@ -18,16 +18,42 @@ async def async_setup_entry(hass: HomeAssistant, entry):
 
     async def handle_add_book(call: ServiceCall):
         isbn = re.sub(r'[- ]', '', call.data.get("isbn", ""))
-        if not isbn: return
+        if not isbn:
+            return
 
-        # 1. Rychlý pokus o získání základních dat (max 2.5s)
-        book_data = await fetch_book_metadata(hass, isbn, fast=True)
-        
+        # Kontrola duplicitního ISBN – povolíme, ale zkopírujeme metadata z existující
+        existing_copy = None
+        for existing in data["books"].values():
+            if existing.get("isbn") == isbn:
+                existing_copy = existing
+                break
+
+        if existing_copy:
+            # Máme ji už v knihovně → zkopírujeme metadata (okamžité, bez internetu)
+            book_data = {
+                "title": existing_copy.get("title"),
+                "authors": existing_copy.get("authors", []),
+                "publishers": [existing_copy.get("publisher")] if existing_copy.get("publisher") else [],
+                "publish_date": existing_copy.get("year"),
+                "pages": existing_copy.get("page_count"),
+                "cover_url": existing_copy.get("cover_url"),
+                "description": existing_copy.get("description"),
+            }
+            hass.bus.async_fire("bookcase_info", {"message": f"Další výtisk: {existing_copy.get('title', isbn)}"})
+            _LOGGER.info("Bookcase: Adding another copy of ISBN %s (%s)", isbn, existing_copy.get("title"))
+        else:
+            # Nové ISBN → fetch z internetu
+            try:
+                book_data = await fetch_book_metadata(hass, isbn)
+            except Exception as err:
+                _LOGGER.error("Bookcase: Metadata fetch failed for ISBN %s: %s", isbn, err)
+                book_data = None
+
         book_id = str(uuid.uuid4())
         new_book = {
             "id": book_id,
             "isbn": isbn,
-            "title": book_data.get("title", f"Kniha: {isbn}") if book_data else f"Načítám: {isbn}...",
+            "title": book_data.get("title", f"Kniha: {isbn}") if book_data else f"Kniha: {isbn}",
             "authors": book_data.get("authors", []) if book_data else [],
             "publisher": book_data.get("publishers", [""])[0] if book_data and book_data.get("publishers") else "",
             "year": book_data.get("publish_date", "") if book_data else "",
@@ -45,26 +71,7 @@ async def async_setup_entry(hass: HomeAssistant, entry):
         await store.async_save(data)
         hass.data[DOMAIN][entry.entry_id]["books"] = data["books"]
         hass.bus.async_fire("bookcase_updated")
-
-        # 2. Donačtení všech detailů na pozadí
-        async def enrich_book():
-            full_data = await fetch_book_metadata(hass, isbn, fast=False)
-            if full_data:
-                data["books"][book_id].update({
-                    "title": full_data.get("title", data["books"][book_id]["title"]),
-                    "authors": full_data.get("authors", data["books"][book_id]["authors"]),
-                    "publisher": full_data.get("publishers", [""])[0] if full_data.get("publishers") else data["books"][book_id]["publisher"],
-                    "year": full_data.get("publish_date", data["books"][book_id]["year"]),
-                    "page_count": full_data.get("pages", data["books"][book_id]["page_count"]),
-                    "cover_url": full_data.get("cover_url", data["books"][book_id]["cover_url"]),
-                    "description": full_data.get("description", data["books"][book_id]["description"])
-                })
-                await store.async_save(data)
-                hass.data[DOMAIN][entry.entry_id]["books"] = data["books"]
-                hass.bus.async_fire("bookcase_updated")
-                _LOGGER.info(f"Bookcase: Book enriched: {data['books'][book_id]['title']}")
-
-        hass.async_create_task(enrich_book())
+        _LOGGER.info("Bookcase: Added book '%s' (ISBN: %s)", new_book["title"], isbn)
 
     async def handle_add_book_manual(call: ServiceCall):
         book_id = str(uuid.uuid4())
@@ -150,7 +157,7 @@ async def async_setup_entry(hass: HomeAssistant, entry):
                 frontend_url_path="bookcase",
                 config={"_panel_custom": {
                     "name": "bookcase-panel",
-                    "module_url": "/bookcase_static/panel.js?v=3.2"
+                    "module_url": "/bookcase_static/panel.js?v=4.0"
                 }},
                 require_admin=False,
             )
