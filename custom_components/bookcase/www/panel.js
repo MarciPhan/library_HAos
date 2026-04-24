@@ -7,6 +7,7 @@ class BookcasePanel extends HTMLElement {
     this._searchQuery = '';
     this._optimisticDeleted = new Set();
     this._eventListenerBound = false;
+    this._sortKey = 'added_at';
   }
 
   set hass(hass) {
@@ -98,12 +99,7 @@ class BookcasePanel extends HTMLElement {
           margin-bottom: 40px;
         }
 
-        .filter-bar {
-          display: flex;
-          gap: 8px;
-          overflow-x: auto;
-          padding-bottom: 5px;
-        }
+        .filter-bar::-webkit-scrollbar { display: none; }
         
         .filter-btn {
           background: var(--card-background-color);
@@ -124,7 +120,8 @@ class BookcasePanel extends HTMLElement {
 
         .search-add-row {
           display: flex;
-          gap: 15px;
+          gap: 12px;
+          flex-wrap: wrap;
         }
         .search-box {
           flex-grow: 1;
@@ -150,13 +147,15 @@ class BookcasePanel extends HTMLElement {
           border-radius: 8px;
           border: 1px solid var(--divider-color);
           padding: 4px;
-          gap: 5px;
+          gap: 4px;
+          flex-grow: 1;
         }
         .add-box input {
           background: transparent;
           border: none;
           padding: 8px 12px;
-          width: 200px;
+          flex-grow: 1;
+          min-width: 80px;
           color: var(--primary-text-color);
           outline: none;
         }
@@ -182,8 +181,8 @@ class BookcasePanel extends HTMLElement {
 
         .grid {
           display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-          gap: 25px;
+          grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+          gap: 20px;
         }
         .book-card {
           background: var(--card-background-color);
@@ -393,10 +392,23 @@ class BookcasePanel extends HTMLElement {
         .toast.error { background: #f44336; }
         .toast.info { background: #2196f3; }
 
-        @media (max-width: 700px) {
+        @media (max-width: 600px) {
+          .container { padding: 16px 12px; }
+          .header h1 { font-size: 1.5rem; }
+          .grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+          }
+          .book-card { padding: 6px; }
+          .book-title { font-size: 0.8rem; min-height: 2.1rem; margin-top: 6px; }
+          .search-add-row { gap: 8px; }
+          .add-box { width: 100%; order: 2; }
+          .search-box { width: 100%; order: 1; }
           .modal-body { flex-direction: column; }
-          .modal-left { width: 100%; height: 200px; }
-          .form-row.cols-3 { grid-template-columns: 1fr 1fr; }
+          .modal-left { width: 100%; height: 250px; }
+          .modal-right { padding: 20px; }
+          .form-row.cols-3, .form-row.cols-2 { grid-template-columns: 1fr; }
+          .toggle-row { flex-direction: column; }
         }
 
         #scanner-modal {
@@ -446,13 +458,27 @@ class BookcasePanel extends HTMLElement {
             </div>
           </div>
           
-          <div class="filter-bar">
-            <button class="filter-btn active" data-filter="all">Vše</button>
-            <button class="filter-btn" data-filter="to_read">K přečtení</button>
-            <button class="filter-btn" data-filter="reading">Rozečtené</button>
-            <button class="filter-btn" data-filter="read">Přečtené</button>
-            <button class="filter-btn" data-filter="wishlist">Wishlist</button>
-            <button class="filter-btn" data-filter="lent">Půjčené</button>
+          <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap;">
+            <div class="filter-bar" style="flex-grow: 1;">
+              <button class="filter-btn active" data-filter="all">Vše</button>
+              <button class="filter-btn" data-filter="to_read">K přečtení</button>
+              <button class="filter-btn" data-filter="reading">Rozečtené</button>
+              <button class="filter-btn" data-filter="read">Přečtené</button>
+              <button class="filter-btn" data-filter="wishlist">Wishlist</button>
+              <button class="filter-btn" data-filter="lent">Půjčené</button>
+            </div>
+            
+            <div class="sort-box" style="display: flex; align-items: center; gap: 8px;">
+              <label style="font-size: 0.7rem; white-space: nowrap;">ŘADIT:</label>
+              <select id="sort-select" style="padding: 6px; border-radius: 6px; background: var(--card-background-color); color: var(--primary-text-color); border: 1px solid var(--divider-color); font-size: 0.8rem;">
+                <option value="added_at">Od nejnovějších</option>
+                <option value="authors">Autor</option>
+                <option value="title">Název</option>
+                <option value="publisher">Nakladatelství</option>
+                <option value="page_count">Počet stran</option>
+                <option value="rating">Hodnocení</option>
+              </select>
+            </div>
           </div>
         </div>
 
@@ -496,6 +522,11 @@ class BookcasePanel extends HTMLElement {
         this.render();
       };
     });
+
+    this.querySelector('#sort-select').onchange = (e) => {
+      this._sortKey = e.target.value;
+      this.render();
+    };
 
     this.modalClose.onclick = () => this.modal.classList.remove('open');
     this.modal.onclick = (e) => { if (e.target === this.modal) this.modal.classList.remove('open'); };
@@ -562,12 +593,17 @@ class BookcasePanel extends HTMLElement {
         this.showToast('Zpracovávám fotku...', 'info');
         scannerModal.classList.add('open');
         
+        // Malá pauza pro zobrazení toastu
+        await new Promise(r => setTimeout(r, 500));
+        
         const html5QrCode = new Html5Qrcode('scanner-reader');
         try {
-          const decodedText = await html5QrCode.scanFile(e.target.files[0], true);
+          // Zvýšíme šanci na úspěch povolením experimentálního režimu a lepším skenováním
+          const decodedText = await html5QrCode.scanFile(e.target.files[0], false);
           onScanSuccess(decodedText);
         } catch (err) {
-          this.showToast('Čárový kód nebyl na fotce nalezen.', 'error');
+          console.error('Scan error:', err);
+          this.showToast('Čárový kód nebyl na fotce nalezen. Zkuste to znovu z větší dálky a zaostřit.', 'warning');
         }
         html5QrCode.clear();
         scannerModal.classList.remove('open');
@@ -804,7 +840,7 @@ class BookcasePanel extends HTMLElement {
 
     body.innerHTML = `
       <div class="modal-left">
-        <img src="${book.cover_url || ''}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+        <img src="/bookcase_static/covers/${book.id}.jpg" onerror="this.src='${book.cover_url || ''}'; this.onerror=function(){this.style.display='none'; this.nextElementSibling.style.display='flex';};">
         <div class="cover-fallback" style="display:none; font-size: 14px;">
           <span style="font-size: 48px; margin-bottom: 10px;">📖</span>
           ${book.title || 'Nová kniha'}
@@ -1010,10 +1046,39 @@ class BookcasePanel extends HTMLElement {
       }
     }
 
+    // Sort books
+    books.sort((a, b) => {
+      let valA, valB;
+      const userRating = b => (b.ratings_by && b.ratings_by[userName]) || 0;
+
+      if (this._sortKey === 'added_at') {
+        valA = a.added_at || '';
+        valB = b.added_at || '';
+        return valB.localeCompare(valA); // Default: newest first
+      } else if (this._sortKey === 'rating') {
+        valA = userRating(a);
+        valB = userRating(b);
+        return valB - valA;
+      } else if (this._sortKey === 'page_count') {
+        valA = a.page_count || 0;
+        valB = b.page_count || 0;
+        return valB - valA;
+      } else if (this._sortKey === 'authors') {
+        valA = (a.authors && a.authors[0]) || '';
+        valB = (b.authors && b.authors[0]) || '';
+        return valA.localeCompare(valB, 'cs');
+      } else {
+        valA = a[this._sortKey] || '';
+        valB = b[this._sortKey] || '';
+        if (typeof valA === 'string') return valA.localeCompare(valB, 'cs');
+        return valA - valB;
+      }
+    });
+
     this.querySelector('#stats').innerText = `${books.length} knih`;
     this.content.innerHTML = '';
     
-    [...books].reverse().forEach(book => {
+    books.forEach(book => {
       const card = document.createElement('div');
       card.className = 'book-card';
       card.onclick = () => { this._manualMode = false; this.openDetail(book); };
@@ -1023,7 +1088,7 @@ class BookcasePanel extends HTMLElement {
       
       card.innerHTML = `
         <div class="cover-wrapper">
-          <img src="${book.cover_url || ''}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+          <img src="/bookcase_static/covers/${book.id}.jpg" onerror="this.src='${book.cover_url || ''}'; this.onerror=function(){this.style.display='none'; this.nextElementSibling.style.display='flex';};">
           <div class="cover-fallback" style="display:none;">
             <span style="font-size: 24px; margin-bottom: 5px;">📖</span>
             <div style="font-weight:bold; overflow:hidden; text-overflow:ellipsis; width:100%; max-height: 40px;">${book.title}</div>

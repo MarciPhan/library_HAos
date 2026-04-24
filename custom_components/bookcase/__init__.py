@@ -2,13 +2,55 @@ import logging
 import uuid
 import re
 import homeassistant.util.dt as dt_util
-from homeassistant.core import HomeAssistant, ServiceCall
-from homeassistant.helpers import discovery
-from homeassistant.components.http import StaticPathConfig
+import os
+import aiohttp
+from homeassistant.components.http import HomeAssistantView, StaticPathConfig
 from .const import DOMAIN, STATUS_TO_READ
 from .api import fetch_book_metadata
 
 _LOGGER = logging.getLogger(__name__)
+
+class BookcaseCoverView(HomeAssistantView):
+    """View to serve and cache book covers."""
+    url = "/bookcase_static/covers/{book_id}.jpg"
+    name = "api:bookcase:cover"
+    requires_auth = False # Veřejně dostupné pro panel
+
+    def __init__(self, hass, books):
+        self.hass = hass
+        self.books = books
+        self.cover_dir = hass.config.path("custom_components/bookcase/www/covers")
+        if not os.path.exists(self.cover_dir):
+            os.makedirs(self.cover_dir)
+
+    async def get(self, request, book_id):
+        """Fetch and serve the cover."""
+        file_path = os.path.join(self.cover_dir, f"{book_id}.jpg")
+        
+        # 1. Pokud existuje lokálně, servírujeme přímo
+        if os.path.exists(file_path):
+            return aiohttp.web.FileResponse(file_path)
+
+        # 2. Pokud neexistuje, zkusíme najít URL obálky v datech
+        book = self.books.get(book_id)
+        if not book or not book.get("cover_url"):
+            return aiohttp.web.Response(status=404)
+
+        cover_url = book["cover_url"]
+        
+        # 3. Stáhneme obálku
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(cover_url, timeout=10) as response:
+                    if response.status == 200:
+                        content = await response.read()
+                        with open(file_path, "wb") as f:
+                            f.write(content)
+                        return aiohttp.web.Response(body=content, content_type="image/jpeg")
+        except Exception as e:
+            _LOGGER.error("Failed to fetch cover from %s: %s", cover_url, e)
+
+        return aiohttp.web.Response(status=404)
 
 async def async_setup_entry(hass: HomeAssistant, entry):
     """Set up Bookcase from a config entry."""
@@ -205,6 +247,8 @@ async def async_setup_entry(hass: HomeAssistant, entry):
         await hass.http.async_register_static_paths([
             StaticPathConfig("/bookcase_static", hass.config.path("custom_components/bookcase/www"), False)
         ])
+        
+        hass.http.async_register_view(BookcaseCoverView(hass, data["books"]))
         
         try:
             from homeassistant.components.frontend import async_register_built_in_panel
