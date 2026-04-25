@@ -19,7 +19,18 @@ class SmartPlantHealthSelect(SmartPlantEntity, SelectEntity):
     @property
     def current_option(self):
         """Return the current health."""
-        return self.coordinator.data.get("health")
+        health = self.coordinator.data.get("health")
+        # Mapování starých stavů (anglických i původních českých) na nové kreativní stavy
+        health_map = {
+            "Excellent": "Ukázková", "Výborné": "Ukázková",
+            "Very Good": "Prosperující", "Velmi dobré": "Prosperující",
+            "Good": "Spokojená", "Dobré": "Spokojená",
+            "Fair": "Stagnující", "Ucházející": "Stagnující",
+            "Poor": "Chřadnoucí", "Špatné": "Chřadnoucí",
+            "Critical": "Skomírající", "Kritické": "Skomírající",
+            "Needs attention": "Skomírající"
+        }
+        return health_map.get(health, health)
 
     async def async_select_option(self, option):
         """Change the health state."""

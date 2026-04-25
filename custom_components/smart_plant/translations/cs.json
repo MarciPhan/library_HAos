@@ -2,26 +2,12 @@
   "config": {
     "step": {
       "user": {
-        "title": "Nastavení Smart Plant",
-        "description": "Zadejte své OpenPlantbook API údaje. Najdete je na https://open.plantbook.io/apikey/show/",
-        "data": {
-          "client_id": "Client ID",
-          "client_secret": "Client Secret"
-        }
-      },
-      "api_setup": {
-        "title": "Nastavení API",
-        "data": {
-          "client_id": "Client ID",
-          "client_secret": "Client Secret"
-        }
-      },
-      "plant_setup": {
         "title": "Přidat rostlinu",
-        "description": "Zadejte název vaší rostliny a vyhledejte její druh v OpenPlantbook.",
+        "description": "Zadejte název své rostliny a vyhledejte její druh. Systém nejprve prohledá lokální databázi a pokud nenajde, vyhledá ji na Wikipedii.",
         "data": {
-          "name": "Název (např. Monstera v obýváku)",
-          "species_search": "Hledat druh (např. Monstera deliciosa)"
+          "name": "Váš název (např. Monstera v rohu)",
+          "species_search": "Hledat druh (např. Monstera)",
+          "custom_image_url": "URL vlastní fotky (volitelné)"
         }
       },
       "select_species": {
@@ -33,11 +19,12 @@
       }
     },
     "error": {
-      "invalid_auth": "Neplatné API údaje.",
-      "no_plants_found": "Nebyly nalezeny žádné rostliny pro tento dotaz."
+      "invalid_api_key": "Neplatný API klíč.",
+      "no_plants_found": "Nebyly nalezeny žádné rostliny pro tento dotaz.",
+      "local_database_error": "Chyba při čtení lokální databáze."
     },
     "abort": {
-      "already_configured": "Zařízení je již nakonfigurováno"
+      "already_configured": "Toto API je již nakonfigurováno."
     }
   },
   "options": {
@@ -45,7 +32,8 @@
       "init": {
         "data": {
           "days_between_waterings": "Dny mezi zaléváním",
-          "health": "Zdraví"
+          "health": "Zdraví",
+          "custom_image_url": "Vlastní URL obrázku"
         }
       }
     }

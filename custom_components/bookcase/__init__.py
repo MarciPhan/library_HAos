@@ -11,6 +11,19 @@ from .api import fetch_book_metadata
 
 _LOGGER = logging.getLogger(__name__)
 
+class BookcasePanelView(HomeAssistantView):
+    """View to serve the panel JavaScript file directly."""
+    url = "/bookcase_static/panel.js"
+    name = "api:bookcase:panel"
+    requires_auth = False
+
+    async def get(self, request):
+        """Serve the panel.js file."""
+        file_path = os.path.join(os.path.dirname(__file__), "www", "panel.js")
+        if not os.path.exists(file_path):
+            return aiohttp.web.Response(status=404)
+        return aiohttp.web.FileResponse(file_path)
+
 class BookcaseCoverView(HomeAssistantView):
     """View to serve and cache book covers."""
     url = "/bookcase_static/covers/{book_id}.jpg"
@@ -300,15 +313,8 @@ async def async_setup_entry(hass: HomeAssistant, entry):
     hass.data.setdefault(DOMAIN, {})
     hass.data[DOMAIN][entry.entry_id] = {"books": data["books"]}
     
-    # Registrace statických souborů (původní funkční metoda)
-    try:
-        from homeassistant.components.http import StaticPathConfig
-        await hass.http.async_register_static_paths([
-            StaticPathConfig("/bookcase_static", hass.config.path("custom_components/bookcase/www"), False)
-        ])
-    except:
-        pass
-    
+    # Registrace views (HTTP servírování)
+    hass.http.register_view(BookcasePanelView())
     hass.http.register_view(BookcaseCoverView(hass, data["books"]))
         
     try:
@@ -321,7 +327,7 @@ async def async_setup_entry(hass: HomeAssistant, entry):
             frontend_url_path="bookcase",
             config={"_panel_custom": {
                 "name": "bookcase-panel",
-                "module_url": "/bookcase_static/panel.js?v=8.2"
+                "module_url": "/bookcase_static/panel.js?v=8.3"
             }},
             require_admin=False,
         )

@@ -1,0 +1,72 @@
+{
+    "monstera_deliciosa": {
+        "name": "Monstera Deliciosa",
+        "watering": "average",
+        "min_soil_moist": 40,
+        "sunlight": ["part shade", "bright indirect light"],
+        "description": "Popular tropical plant with iconic split leaves. Loves humidity."
+    },
+    "ficus_lyrata": {
+        "name": "Ficus Lyrata (Fiddle Leaf Fig)",
+        "watering": "average",
+        "min_soil_moist": 45,
+        "sunlight": ["bright indirect light"],
+        "description": "Trendy indoor tree with large, violin-shaped leaves."
+    },
+    "sansevieria_trifasciata": {
+        "name": "Snake Plant (Sansevieria)",
+        "watering": "minimum",
+        "min_soil_moist": 15,
+        "sunlight": ["low light", "part shade", "full sun"],
+        "description": "Hardy succulent that tolerates neglect and low light."
+    },
+    "aloe_vera": {
+        "name": "Aloe Vera",
+        "watering": "minimum",
+        "min_soil_moist": 15,
+        "sunlight": ["full sun", "bright indirect light"],
+        "description": "Medicinal succulent that stores water in its leaves."
+    },
+    "epipremnum_aureum": {
+        "name": "Pothos",
+        "watering": "average",
+        "min_soil_moist": 40,
+        "sunlight": ["low light", "part shade"],
+        "description": "Fast-growing vine with heart-shaped leaves. Very easy to care for."
+    },
+    "zamioculcas_zamiifolia": {
+        "name": "ZZ Plant",
+        "watering": "minimum",
+        "min_soil_moist": 15,
+        "sunlight": ["low light", "part shade"],
+        "description": "Ultra-tough plant with shiny, dark green leaves."
+    },
+    "spathiphyllum": {
+        "name": "Peace Lily",
+        "watering": "frequent",
+        "min_soil_moist": 60,
+        "sunlight": ["low light", "part shade"],
+        "description": "Elegant plant that wilts dramatically when thirsty."
+    },
+    "chlorophytum_comosum": {
+        "name": "Spider Plant",
+        "watering": "average",
+        "min_soil_moist": 45,
+        "sunlight": ["part shade", "bright indirect light"],
+        "description": "Produces many 'babies' on long stalks. Great for beginners."
+    },
+    "plectranthus_amboinicus": {
+        "name": "Rýmovník (Mexican Mint)",
+        "watering": "minimum",
+        "min_soil_moist": 25,
+        "sunlight": ["full sun", "bright indirect light"],
+        "description": "Fragrant medicinal plant with thick, fuzzy leaves. Good for tea and colds."
+    },
+    "kalanchoe_blossfeldiana": {
+        "name": "Kolopejka vděčná (Flaming Katy)",
+        "watering": "minimum",
+        "min_soil_moist": 15,
+        "sunlight": ["full sun", "bright light"],
+        "description": "Popular flowering succulent with long-lasting colorful blooms."
+    }
+}

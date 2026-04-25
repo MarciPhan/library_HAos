@@ -5,3 +5,19 @@ search_plants:
       description: Název rostliny nebo druh.
       example: "Monstera"
       required: true
+
+set_custom_image:
+  description: Set a custom image URL for the plant.
+  fields:
+    url:
+      description: The URL of the image.
+      example: "https://example.com/my_plant.jpg"
+      required: true
+
+upload_image:
+  description: Copy a local image file to Smart Plant and set it as the plant photo.
+  fields:
+    file_path:
+      description: The absolute path to the image file on the server.
+      example: "/home/user/photos/plant.jpg"
+      required: true

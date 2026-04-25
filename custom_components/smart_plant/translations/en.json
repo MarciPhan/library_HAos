@@ -2,42 +2,29 @@
   "config": {
     "step": {
       "user": {
-        "title": "Smart Plant Setup",
-        "description": "Enter your OpenPlantbook API credentials. Get them at https://open.plantbook.io/apikey/show/",
-        "data": {
-          "client_id": "Client ID",
-          "client_secret": "Client Secret"
-        }
-      },
-      "api_setup": {
-        "title": "API Setup",
-        "data": {
-          "client_id": "Client ID",
-          "client_secret": "Client Secret"
-        }
-      },
-      "plant_setup": {
         "title": "Add Plant",
-        "description": "Enter your plant's name and search for its species in OpenPlantbook.",
+        "description": "Enter your plant's name and search for its species. The system will search the local database first and fallback to Wikipedia.",
         "data": {
-          "name": "Name (e.g., Living Room Monstera)",
-          "species_search": "Search species (e.g., Monstera deliciosa)"
+          "name": "Your name (e.g. Corner Monstera)",
+          "species_search": "Search species (e.g. Monstera)",
+          "custom_image_url": "Custom Image URL (optional)"
         }
       },
       "select_species": {
         "title": "Select Species",
-        "description": "Select the best match from the search results.",
+        "description": "Select the best match from the results.",
         "data": {
           "pid": "Plant Species"
         }
       }
     },
     "error": {
-      "invalid_auth": "Invalid API credentials.",
-      "no_plants_found": "No plants found for this query."
+      "invalid_api_key": "Invalid API Key.",
+      "no_plants_found": "No plants found for this query.",
+      "local_database_error": "Error reading local database."
     },
     "abort": {
-      "already_configured": "Device is already configured"
+      "already_configured": "This API is already configured."
     }
   }
 }
