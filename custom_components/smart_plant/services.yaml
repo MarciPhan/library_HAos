@@ -1,0 +1,7 @@
+search_plants:
+  description: Prohledá databázi OpenPlantbook a vrátí výsledky.
+  fields:
+    query:
+      description: Název rostliny nebo druh.
+      example: "Monstera"
+      required: true

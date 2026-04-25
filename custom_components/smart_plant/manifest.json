@@ -1,0 +1,11 @@
+{
+  "domain": "smart_plant",
+  "name": "Smart Plant",
+  "documentation": "https://github.com/ndesgranges/simple-plant",
+  "dependencies": [],
+  "codeowners": ["@antigravity"],
+  "config_flow": true,
+  "iot_class": "cloud_polling",
+  "version": "1.0.0",
+  "requirements": []
+}

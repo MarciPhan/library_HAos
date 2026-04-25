@@ -1,0 +1,43 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Smart Plant Setup",
+        "description": "Enter your OpenPlantbook API credentials. Get them at https://open.plantbook.io/apikey/show/",
+        "data": {
+          "client_id": "Client ID",
+          "client_secret": "Client Secret"
+        }
+      },
+      "api_setup": {
+        "title": "API Setup",
+        "data": {
+          "client_id": "Client ID",
+          "client_secret": "Client Secret"
+        }
+      },
+      "plant_setup": {
+        "title": "Add Plant",
+        "description": "Enter your plant's name and search for its species in OpenPlantbook.",
+        "data": {
+          "name": "Name (e.g., Living Room Monstera)",
+          "species_search": "Search species (e.g., Monstera deliciosa)"
+        }
+      },
+      "select_species": {
+        "title": "Select Species",
+        "description": "Select the best match from the search results.",
+        "data": {
+          "pid": "Plant Species"
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "Invalid API credentials.",
+      "no_plants_found": "No plants found for this query."
+    },
+    "abort": {
+      "already_configured": "Device is already configured"
+    }
+  }
+}

@@ -1,0 +1,53 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Nastavení Smart Plant",
+        "description": "Zadejte své OpenPlantbook API údaje. Najdete je na https://open.plantbook.io/apikey/show/",
+        "data": {
+          "client_id": "Client ID",
+          "client_secret": "Client Secret"
+        }
+      },
+      "api_setup": {
+        "title": "Nastavení API",
+        "data": {
+          "client_id": "Client ID",
+          "client_secret": "Client Secret"
+        }
+      },
+      "plant_setup": {
+        "title": "Přidat rostlinu",
+        "description": "Zadejte název vaší rostliny a vyhledejte její druh v OpenPlantbook.",
+        "data": {
+          "name": "Název (např. Monstera v obýváku)",
+          "species_search": "Hledat druh (např. Monstera deliciosa)"
+        }
+      },
+      "select_species": {
+        "title": "Vyberte druh",
+        "description": "Vyberte nejvhodnější shodu z nalezených výsledků.",
+        "data": {
+          "pid": "Druh rostliny"
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "Neplatné API údaje.",
+      "no_plants_found": "Nebyly nalezeny žádné rostliny pro tento dotaz."
+    },
+    "abort": {
+      "already_configured": "Zařízení je již nakonfigurováno"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "data": {
+          "days_between_waterings": "Dny mezi zaléváním",
+          "health": "Zdraví"
+        }
+      }
+    }
+  }
+}
