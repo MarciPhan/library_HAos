@@ -106,6 +106,11 @@ def _merge_results(isbn: str, results: list[dict]) -> dict:
     }
 
     for res in results:
+        # ISBN – pokud jsme hledali podle názvu nebo máme kratší verzi, preferujeme delší nalezené ISBN
+        res_isbn = res.get("isbn")
+        if res_isbn and (not merged["isbn"] or not any(c.isdigit() for c in merged["isbn"]) or len(res_isbn) > len(merged["isbn"])):
+            merged["isbn"] = res_isbn
+
         # Titul – preferujeme delší (pravděpodobně kompletní)
         res_title = res.get("title")
         if res_title and (not merged["title"] or len(res_title) > len(merged["title"])):
@@ -429,6 +434,7 @@ async def fetch_databazeknih_cz(session, query: str) -> dict | None:
         pages = re.search(r'Po\u010det stran:.*?(\d+)', text)
         year = re.search(r'Rok vyd\u00e1n\u00ed:.*?(\d{4})', text)
         publisher = re.search(r'Nakladatelstv\u00ed:.*?<a[^>]+>([^<]+)</a>', text)
+        isbn_match = re.search(r'ISBN:.*?([0-9- ]{10,20})', text)
 
         return {
             "title": title_match.group(1).strip() if title_match else None,
@@ -438,6 +444,7 @@ async def fetch_databazeknih_cz(session, query: str) -> dict | None:
             "pages": int(pages.group(1)) if pages else None,
             "publish_date": year.group(0) if year else None,
             "publishers": [publisher.group(1).strip()] if publisher else [],
+            "isbn": re.sub(r'[- ]', '', isbn_match.group(1)) if isbn_match else None,
             "url": final_url if "/knihy/" in final_url else url
         }
     except: return None
@@ -476,6 +483,7 @@ async def fetch_martinus_cz(session, isbn: str, query: str = "") -> dict | None:
             "cover_url": img.group(1) if img else None,
             "pages": int(pages.group(1)) if pages else None,
             "publish_date": year.group(0) if year else None,
+            "isbn": re.sub(r'[- ]', '', isbn_match.group(1)) if isbn_match else None,
             "url": url
         }
     except: return None

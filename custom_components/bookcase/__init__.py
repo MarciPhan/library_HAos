@@ -116,14 +116,18 @@ async def async_setup_entry(hass: HomeAssistant, entry):
         _LOGGER.info("Bookcase: Data migration completed (titles split by colon)")
 
     async def handle_add_book(call: ServiceCall):
-        isbn = re.sub(r'[- ]', '', call.data.get("isbn", ""))
-        if not isbn:
+        query = call.data.get("isbn", "").strip()
+        if not query:
             return
+
+        # Normalizované ISBN pro kontrolu duplicit (odstranění mezer a pomlček)
+        # Provádíme pouze pokud to vypadá jako ISBN (obsahuje číslice)
+        normalized_query = re.sub(r'[- ]', '', query) if any(c.isdigit() for c in query) else query
 
         # Kontrola duplicitního ISBN – povolíme, ale zkopírujeme metadata z existující
         existing_copy = None
         for existing in data["books"].values():
-            if existing.get("isbn") == isbn:
+            if existing.get("isbn") == normalized_query:
                 existing_copy = existing
                 break
 
@@ -142,21 +146,25 @@ async def async_setup_entry(hass: HomeAssistant, entry):
                 "genres": existing_copy.get("genre", []),
                 "url": existing_copy.get("url", ""),
             }
-            hass.bus.async_fire("bookcase_info", {"message": f"Další výtisk: {existing_copy.get('title', isbn)}"})
-            _LOGGER.info("Bookcase: Adding another copy of ISBN %s (%s)", isbn, existing_copy.get("title"))
+            hass.bus.async_fire("bookcase_info", {"message": f"Další výtisk: {existing_copy.get('title', normalized_query)}"})
+            _LOGGER.info("Bookcase: Adding another copy of ISBN %s (%s)", normalized_query, existing_copy.get("title"))
         else:
-            # Nové ISBN → fetch z internetu
+            # Nový dotaz → fetch z internetu
             try:
-                book_data = await fetch_book_metadata(hass, isbn)
+                book_data = await fetch_book_metadata(hass, query)
             except Exception as err:
-                _LOGGER.error("Bookcase: Metadata fetch failed for ISBN %s: %s", isbn, err)
+                _LOGGER.error("Bookcase: Metadata fetch failed for query %s: %s", query, err)
                 book_data = None
 
         book_id = str(uuid.uuid4())
+        
+        # Pokud jsme hledali podle názvu, zkusíme z metadat vytáhnout skutečné ISBN, pokud tam je
+        final_isbn = book_data.get("isbn", normalized_query) if book_data else normalized_query
+
         new_book = {
             "id": book_id,
-            "isbn": isbn,
-            "title": book_data.get("title", f"Kniha: {isbn}") if book_data else f"Kniha: {isbn}",
+            "isbn": final_isbn,
+            "title": book_data.get("title", f"Kniha: {query}") if book_data else f"Kniha: {query}",
             "subtitle": book_data.get("subtitle", "") if book_data else "",
             "authors": book_data.get("authors", []) if book_data else [],
             "publisher": book_data.get("publishers", [""])[0] if book_data and book_data.get("publishers") else "",
@@ -183,7 +191,7 @@ async def async_setup_entry(hass: HomeAssistant, entry):
         await store.async_save(data)
         hass.data[DOMAIN][entry.entry_id]["books"] = data["books"]
         hass.bus.async_fire("bookcase_updated")
-        _LOGGER.info("Bookcase: Added book '%s' (ISBN: %s)", new_book["title"], isbn)
+        _LOGGER.info("Bookcase: Added book '%s' (Query: %s, ISBN: %s)", new_book["title"], query, final_isbn)
 
     async def handle_add_book_manual(call: ServiceCall):
         book_id = str(uuid.uuid4())

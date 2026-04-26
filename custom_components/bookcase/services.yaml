@@ -4,7 +4,7 @@ add_by_isbn:
   fields:
     isbn:
       name: ISBN
-      description: ISBN kód knihy (10 nebo 13 číslic).
+      description: ISBN kód knihy (10 nebo 13 číslic) nebo její přesný název.
       required: true
       example: "9788025712345"
 
