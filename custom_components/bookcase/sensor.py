@@ -40,9 +40,16 @@ class BookcaseStatsSensor(SensorEntity):
     def extra_state_attributes(self):
         """Return the state attributes."""
         books = self._hass.data[DOMAIN][self._entry.entry_id]["books"]
+        processed_books = []
+        for book in books.values():
+            b = book.copy()
+            # Posíláme odkaz na náš vnitřní proxy server, který zajistí kešování
+            b["cover_url"] = f"/bookcase_static/covers/{b['id']}.jpg"
+            processed_books.append(b)
+            
         if self._category == "total":
             return {
-                "books": list(books.values())
+                "books": processed_books
             }
         return {}
 

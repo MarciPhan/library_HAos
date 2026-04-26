@@ -24,6 +24,62 @@ class BookcasePanelView(HomeAssistantView):
             return aiohttp.web.Response(status=404)
         return aiohttp.web.FileResponse(file_path)
 
+class BookcaseExportView(HomeAssistantView):
+    """View to export the entire library as a CSV file."""
+    url = "/bookcase_static/export.csv"
+    name = "api:bookcase:export"
+    requires_auth = False # Veřejné pro stažení z panelu
+
+    def __init__(self, books):
+        self.books = books
+
+    async def get(self, request):
+        """Generate and serve the CSV file."""
+        import csv
+        import io
+        
+        output = io.StringIO()
+        writer = csv.writer(output, delimiter=';', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+        
+        # Hlavička
+        writer.writerow([
+            "ID", "ISBN", "Titul", "Podnázev", "Autoři", "Nakladatel", 
+            "Rok", "Jazyk", "Stran", "Kusů", "Stav", "Přečteno", 
+            "Mé hodnocení", "Mé poznámky", "Půjčeno komu", "Termín vrácení"
+        ])
+        
+        for book in self.books.values():
+            loans = book.get("active_loans", [])
+            loan_people = ", ".join([l.get("person", "") for l in loans])
+            loan_dates = ", ".join([l.get("until", "") for l in loans])
+            
+            writer.writerow([
+                book.get("id", ""),
+                book.get("isbn", ""),
+                book.get("title", ""),
+                book.get("subtitle", ""),
+                ", ".join(book.get("authors", [])),
+                book.get("publisher", ""),
+                book.get("year", ""),
+                book.get("language", ""),
+                book.get("page_count", 0),
+                book.get("count", 1),
+                book.get("status", ""),
+                "Ano" if book.get("is_read") else "Ne",
+                # Hodnocení a poznámky (pro jednoduchost bereme první nalezené nebo prázdné)
+                next(iter(book.get("ratings_by", {}).values()), ""),
+                next(iter(book.get("notes_by", {}).values()), ""),
+                loan_people,
+                loan_dates
+            ])
+            
+        return aiohttp.web.Response(
+            body=output.getvalue(),
+            content_type="text/csv",
+            headers={"Content-Disposition": 'attachment; filename="knihovnicka_export.csv"'}
+        )
+
+
 class BookcaseCoverView(HomeAssistantView):
     """View to serve and cache book covers."""
     url = "/bookcase_static/covers/{book_id}.jpg"
@@ -381,6 +437,7 @@ async def async_setup_entry(hass: HomeAssistant, entry):
     # Registrace views (HTTP servírování)
     hass.http.register_view(BookcasePanelView())
     hass.http.register_view(BookcaseCoverView(hass, data["books"]))
+    hass.http.register_view(BookcaseExportView(data["books"]))
         
     try:
         from homeassistant.components.frontend import async_register_built_in_panel

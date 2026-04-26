@@ -405,8 +405,10 @@ async def fetch_nkp_cz(session, query: str) -> dict | None:
 
 
 async def fetch_databazeknih_cz(session, query: str) -> dict | None:
-    """Databazeknih.cz – nejlepší český komunitní web."""
-    url = f"https://www.databazeknih.cz/search?q={query}"
+    """Scrapuje Databázi knih (databazeknih.cz)."""
+    import urllib.parse
+    encoded_query = urllib.parse.quote(query)
+    url = f"https://www.databazeknih.cz/search?q={encoded_query}"
     try:
         async with session.get(url, timeout=_SOURCE_TIMEOUT, allow_redirects=True) as resp:
             if resp.status != 200: return None
