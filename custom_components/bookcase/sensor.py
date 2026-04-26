@@ -7,6 +7,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
     """Set up the Bookcase sensors."""
     async_add_entities([
         BookcaseStatsSensor(hass, entry, "Total Books", "total"),
+        BookcaseStatsSensor(hass, entry, "Lent Books", "lent"),
         BookcaseStatsSensor(hass, entry, "Read Books", STATUS_READ),
         BookcaseStatsSensor(hass, entry, "Reading Books", STATUS_READING),
         BookcaseStatsSensor(hass, entry, "To Read Books", STATUS_TO_READ),
@@ -28,7 +29,10 @@ class BookcaseStatsSensor(SensorEntity):
         """Return the state of the sensor."""
         books = self._hass.data[DOMAIN][self._entry.entry_id]["books"]
         if self._category == "total":
-            return len(books)
+            return sum(b.get("count", 1) for b in books.values())
+        
+        if self._category == "lent":
+            return sum(len(b.get("active_loans", [])) for b in books.values())
         
         return len([b for b in books.values() if b.get("status") == self._category])
 

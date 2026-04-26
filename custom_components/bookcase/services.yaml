@@ -54,3 +54,31 @@ delete_book:
       name: ID knihy
       description: Interní ID knihy.
       required: true
+
+loan_book:
+  name: Půjčit knihu
+  description: Přidá novou výpůjčku ke konkrétnímu titulu.
+  fields:
+    book_id:
+      name: ID knihy
+      description: Interní ID knihy.
+      required: true
+    person:
+      name: Osoba
+      description: Jméno osoby, které knihu půjčujete.
+      required: true
+    until:
+      name: Termín vrácení
+      description: Datum, do kdy má být kniha vrácena (RRRR-MM-DD).
+
+return_book:
+  name: Vrátit knihu
+  description: Odstraní výpůjčku (vráti knihu na polici).
+  fields:
+    book_id:
+      name: ID knihy
+      description: Interní ID knihy.
+      required: true
+    person:
+      name: Osoba
+      description: Jméno osoby, která knihu vrací (nepovinné, smaže první nalezenou půjčku).

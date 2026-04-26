@@ -73,47 +73,63 @@ async def async_setup_entry(hass: HomeAssistant, entry):
     store = Store(hass, 1, "bookcase_data")
     data = await store.async_load() or {"books": {}}
 
-    # Migrace stávajících dat
-    migrated = False
-    for book_id, book in data.get("books", {}).items():
-        # 1. Agresivnější migrace titulu (rozdělení podle dvojtečky)
-        current_title = book.get("title", "")
-        if ":" in current_title:
-            parts = current_title.split(":", 1)
-            new_title = parts[0].strip()
-            new_subtitle = parts[1].strip()
-            # Pokud už podnázev existoval, přidáme ho k novému
-            if book.get("subtitle") and book["subtitle"] != new_subtitle:
-                book["subtitle"] = f"{new_subtitle} - {book['subtitle']}"
-            else:
-                book["subtitle"] = new_subtitle
-            book["title"] = new_title
-            _LOGGER.info("Migrated title for book %s: %s -> %s | %s", 
-                         book_id, current_title, book["title"], book["subtitle"])
+    # 4. Sjednocení duplicitních ISBN a inicializace 'active_loans'
+    isbn_map = {}
+    to_delete = []
+    
+    # Pracujeme s kopií klíčů, protože budeme mazat
+    all_book_ids = list(data.get("books", {}).keys())
+    for book_id in all_book_ids:
+        book = data["books"][book_id]
+        
+        # Inicializace active_loans, pokud chybí
+        if "active_loans" not in book:
+            book["active_loans"] = []
+            # Pokud má kniha starý styl půjčení, převedeme ho
+            if book.get("lent_to"):
+                book["active_loans"].append({
+                    "person": book["lent_to"],
+                    "until": book.get("lent_until", ""),
+                    "loaned_at": book.get("added_at", dt_util.now().isoformat())
+                })
             migrated = True
         
-        # 2. Migrace stavu fyzické knihy (na globální 'condition')
-        if "condition" not in book:
-            old_conds = book.pop("conditions_by", {})
-            book["condition"] = next(iter(old_conds.values()), "") if old_conds else ""
-            migrated = True
+        isbn = book.get("isbn")
+        if not isbn: continue
+        
+        if isbn not in isbn_map:
+            isbn_map[isbn] = book_id
+        else:
+            # Máme duplicitu! Sloučíme ji do původního záznamu (prvního nalezeného)
+            target_id = isbn_map[isbn]
+            target = data["books"][target_id]
             
-        # 3. Inicializace 'statuses_by' pro personalizovaný status
-        if "statuses_by" not in book:
-            book["statuses_by"] = {}
-            # Pokud má kniha globální status, můžeme ho zinicializovat pro všechny, 
-            # kteří knihu už nějak interagovali (např. v read_by)
-            if book.get("status"):
-                # Pro jistotu zmigrujeme globální status do statuses_by pro existující záznamy
-                for user in book.get("read_by", []):
-                    book["statuses_by"][user] = "read"
-                for user in book.get("wishlist_by", []):
-                    book["statuses_by"][user] = "wishlist"
+            # Sečteme kusy
+            target["count"] = target.get("count", 1) + book.get("count", 1)
+            # Sloučíme půjčky
+            target["active_loans"].extend(book.get("active_loans", []))
+            # Sloučíme metadata (pokud cílový záznam něco nemá)
+            for key in ["description", "subtitle", "cover_url", "genre"]:
+                if not target.get(key) and book.get(key):
+                    target[key] = book[key]
+            # Sloučíme uživatelská data
+            for key in ["ratings_by", "notes_by", "statuses_by"]:
+                if key in book:
+                    target.setdefault(key, {}).update(book[key])
+            for user in book.get("read_by", []):
+                if user not in target.setdefault("read_by", []):
+                    target["read_by"].append(user)
+            
+            to_delete.append(book_id)
             migrated = True
+
+    for book_id in to_delete:
+        del data["books"][book_id]
+        _LOGGER.info("Bookcase: Merged duplicate book record %s", book_id)
     
     if migrated:
         await store.async_save(data)
-        _LOGGER.info("Bookcase: Data migration completed (titles split by colon)")
+        _LOGGER.info("Bookcase: Data migration completed (duplicates merged, loans initialized)")
 
     async def handle_add_book(call: ServiceCall):
         query = call.data.get("isbn", "").strip()
@@ -121,40 +137,30 @@ async def async_setup_entry(hass: HomeAssistant, entry):
             return
 
         # Normalizované ISBN pro kontrolu duplicit (odstranění mezer a pomlček)
-        # Provádíme pouze pokud to vypadá jako ISBN (obsahuje číslice)
         normalized_query = re.sub(r'[- ]', '', query) if any(c.isdigit() for c in query) else query
 
-        # Kontrola duplicitního ISBN – povolíme, ale zkopírujeme metadata z existující
-        existing_copy = None
-        for existing in data["books"].values():
+        # Kontrola duplicitního ISBN – pokud už ji máme, jen navýšíme počet
+        existing_id = None
+        for bid, existing in data["books"].items():
             if existing.get("isbn") == normalized_query:
-                existing_copy = existing
+                existing_id = bid
                 break
 
-        if existing_copy:
-            # Máme ji už v knihovně → zkopírujeme metadata (okamžité, bez internetu)
-            book_data = {
-                "title": existing_copy.get("title"),
-                "subtitle": existing_copy.get("subtitle", ""),
-                "authors": existing_copy.get("authors", []),
-                "publishers": [existing_copy.get("publisher")] if existing_copy.get("publisher") else [],
-                "publish_date": existing_copy.get("year"),
-                "pages": existing_copy.get("page_count"),
-                "cover_url": existing_copy.get("cover_url"),
-                "description": existing_copy.get("description"),
-                "language": existing_copy.get("language", ""),
-                "genres": existing_copy.get("genre", []),
-                "url": existing_copy.get("url", ""),
-            }
-            hass.bus.async_fire("bookcase_info", {"message": f"Další výtisk: {existing_copy.get('title', normalized_query)}"})
-            _LOGGER.info("Bookcase: Adding another copy of ISBN %s (%s)", normalized_query, existing_copy.get("title"))
-        else:
-            # Nový dotaz → fetch z internetu
-            try:
-                book_data = await fetch_book_metadata(hass, query)
-            except Exception as err:
-                _LOGGER.error("Bookcase: Metadata fetch failed for query %s: %s", query, err)
-                book_data = None
+        if existing_id:
+            # Už ji máme → jen navýšíme count
+            data["books"][existing_id]["count"] = data["books"][existing_id].get("count", 1) + 1
+            await store.async_save(data)
+            hass.bus.async_fire("bookcase_updated")
+            hass.bus.async_fire("bookcase_info", {"message": f"Přidán další výtisk: {data['books'][existing_id].get('title')}"})
+            _LOGGER.info("Bookcase: Incremented count for ISBN %s", normalized_query)
+            return
+
+        # Nový dotaz → fetch z internetu
+        try:
+            book_data = await fetch_book_metadata(hass, query)
+        except Exception as err:
+            _LOGGER.error("Bookcase: Metadata fetch failed for query %s: %s", query, err)
+            book_data = None
 
         book_id = str(uuid.uuid4())
         
@@ -181,6 +187,7 @@ async def async_setup_entry(hass: HomeAssistant, entry):
             "ratings_by": {},
             "notes_by": {},
             "statuses_by": {},
+            "active_loans": [],
             "date_read": "",
             "added_at": dt_util.now().isoformat(),
             "read_by": [],
@@ -312,11 +319,61 @@ async def async_setup_entry(hass: HomeAssistant, entry):
         hass.bus.async_fire("bookcase_updated")
         hass.bus.async_fire("bookcase_info", {"message": f"Metadata obnovena: {data['books'][book_id].get('title')}"})
 
+    async def handle_loan_book(call: ServiceCall):
+        book_id = call.data.get("book_id")
+        person = call.data.get("person")
+        until = call.data.get("until", "")
+        if book_id not in data["books"] or not person: return
+        
+        book = data["books"][book_id]
+        if len(book.get("active_loans", [])) >= book.get("count", 1):
+            hass.bus.async_fire("bookcase_info", {"message": "Nelze půjčit: Žádný výtisk není dostupný."})
+            return
+            
+        book.setdefault("active_loans", []).append({
+            "person": person,
+            "until": until,
+            "loaned_at": dt_util.now().isoformat()
+        })
+        
+        # Calendar integration fallback
+        try:
+            await hass.services.async_call("calendar", "create_event", {
+                "entity_id": "calendar.primary",
+                "summary": f"Vrátit knihu: {book.get('title')}",
+                "description": f"Kniha zapůjčena: {person}",
+                "end_date": until if until else (dt_util.now() + dt_util.timedelta(days=30)).strftime("%Y-%m-%d")
+            })
+        except: pass
+
+        await store.async_save(data)
+        hass.bus.async_fire("bookcase_updated")
+        _LOGGER.info("Bookcase: Loaned '%s' to %s", book.get("title"), person)
+
+    async def handle_return_book(call: ServiceCall):
+        book_id = call.data.get("book_id")
+        person = call.data.get("person")
+        if book_id not in data["books"]: return
+        
+        book = data["books"][book_id]
+        loans = book.get("active_loans", [])
+        
+        if person:
+            book["active_loans"] = [l for l in loans if l.get("person") != person]
+        elif loans:
+            book["active_loans"].pop(0)
+            
+        await store.async_save(data)
+        hass.bus.async_fire("bookcase_updated")
+        _LOGGER.info("Bookcase: Book returned for '%s'", book.get("title"))
+
     hass.services.async_register(DOMAIN, "add_by_isbn", handle_add_book)
     hass.services.async_register(DOMAIN, "add_manual", handle_add_book_manual)
     hass.services.async_register(DOMAIN, "update_book", handle_update_book)
     hass.services.async_register(DOMAIN, "delete_book", handle_delete_book)
     hass.services.async_register(DOMAIN, "refresh_book", handle_refresh_book)
+    hass.services.async_register(DOMAIN, "loan_book", handle_loan_book)
+    hass.services.async_register(DOMAIN, "return_book", handle_return_book)
 
     hass.data.setdefault(DOMAIN, {})
     hass.data[DOMAIN][entry.entry_id] = {"books": data["books"]}
