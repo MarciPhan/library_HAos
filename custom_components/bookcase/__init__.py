@@ -498,7 +498,7 @@ async def async_setup_entry(hass: HomeAssistant, entry):
             frontend_url_path="bookcase",
             config={"_panel_custom": {
                 "name": "bookcase-panel",
-                "module_url": "/bookcase_static/panel.js?v=8.4"
+                "module_url": "/bookcase_static/panel.js?v=9.0"
             }},
             require_admin=False,
         )

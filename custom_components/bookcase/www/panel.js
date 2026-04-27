@@ -462,10 +462,7 @@ class BookcasePanel extends HTMLElement {
       <div class="container">
         <div class="header">
           <h1>Moje Knihovna</h1>
-          <div style="display:flex; align-items:center; gap:15px;">
-            <a href="/bookcase_static/export.csv" target="_blank" class="action-btn" style="background:#4caf50; text-decoration:none; height:36px; padding:0 15px; font-size:0.8rem;">📥 Export CSV</a>
-            <div id="stats" style="font-size: 0.9rem; opacity: 0.6;"></div>
-          </div>
+          <div id="stats" style="font-size: 0.9rem; opacity: 0.6;"></div>
         </div>
         
         <div class="toolbar">
@@ -484,6 +481,9 @@ class BookcasePanel extends HTMLElement {
               <button id="manual-btn" class="action-btn" style="background: var(--secondary-background-color); color: var(--primary-text-color); border: 1px solid var(--divider-color);">
                 Ručně
               </button>
+              <a href="/bookcase_static/export.csv" target="_blank" class="action-btn" style="background:#4caf50; text-decoration:none;" title="Exportovat knihovnu do CSV">
+                📥 Export
+              </a>
             </div>
           </div>
           
@@ -948,12 +948,17 @@ class BookcasePanel extends HTMLElement {
         </div>
         <div class="form-row cols-2">
           <div class="form-group">
-            <label>URL obálky</label>
+            <label>Obálka (nahrát / vyfotit)</label>
             <div style="display:flex; gap:8px;">
-              <input type="text" id="edit-cover-url" class="text-input" value="${book.cover_url || ''}" placeholder="https://..." style="flex:1;">
-              <button id="upload-cover-btn" class="action-btn" style="padding:0 12px; height:42px; background:var(--secondary-text-color);" title="Nahrát vlastní fotku">📷</button>
+              <button id="upload-cover-btn" class="action-btn" style="flex:1; padding:0 12px; height:42px; background:var(--secondary-background-color); color:var(--primary-text-color); border:1px solid var(--divider-color);" title="Vybrat soubor z galerie">📁 Nahrát</button>
+              <button id="camera-cover-btn" class="action-btn" style="flex:1; padding:0 12px; height:42px; background:var(--secondary-background-color); color:var(--primary-text-color); border:1px solid var(--divider-color);" title="Vyfotit obálku">📸 Vyfotit</button>
             </div>
             <input type="file" id="cover-upload-input" style="display:none;" accept="image/*">
+            <input type="file" id="cover-camera-input" style="display:none;" accept="image/*" capture="environment">
+            <div style="margin-top:8px;">
+              <label style="font-size:0.6rem; opacity:0.6;">NEBO URL ADRESA:</label>
+              <input type="text" id="edit-cover-url" class="text-input" value="${book.cover_url || ''}" placeholder="https://..." style="width:100%; margin-top:4px;">
+            </div>
           </div>
           <div class="form-group">
             <label>Odkaz na knihu</label>
@@ -1089,38 +1094,45 @@ class BookcasePanel extends HTMLElement {
     }
 
     const uploadBtn = body.querySelector('#upload-cover-btn');
+    const cameraBtn = body.querySelector('#camera-cover-btn');
     const uploadInput = body.querySelector('#cover-upload-input');
+    const cameraInput = body.querySelector('#cover-camera-input');
+
+    const handleFileUpload = async (file) => {
+      if (!file) return;
+      const formData = new FormData();
+      formData.append('file', file);
+      try {
+        this.showToast('Nahrávám obálku...', 'info');
+        const response = await fetch(`/bookcase_static/covers/${book.id}.jpg`, {
+          method: 'POST',
+          body: formData
+        });
+        if (response.ok) {
+          this.showToast('Obálka byla uložena', 'success');
+          const img = body.querySelector('.modal-left img');
+          if (img) {
+            img.style.display = 'block';
+            img.src = `/bookcase_static/covers/${book.id}.jpg?v=${Date.now()}`;
+            const fallback = body.querySelector('.cover-fallback');
+            if (fallback) fallback.style.display = 'none';
+          }
+        } else {
+          this.showToast('Nahrávání selhalo', 'error');
+        }
+      } catch (err) {
+        console.error('Upload error:', err);
+        this.showToast('Chyba při nahrávání', 'error');
+      }
+    };
+
     if (uploadBtn && uploadInput) {
       uploadBtn.onclick = () => uploadInput.click();
-      uploadInput.onchange = async (e) => {
-        if (e.target.files && e.target.files[0]) {
-          const file = e.target.files[0];
-          const formData = new FormData();
-          formData.append('file', file);
-          try {
-            this.showToast('Nahrávám obálku...', 'info');
-            const response = await fetch(`/bookcase_static/covers/${book.id}.jpg`, {
-              method: 'POST',
-              body: formData
-            });
-            if (response.ok) {
-              this.showToast('Obálka byla nahrána', 'success');
-              const img = body.querySelector('.modal-left img');
-              if (img) {
-                img.style.display = 'block';
-                img.src = `/bookcase_static/covers/${book.id}.jpg?v=${Date.now()}`;
-                const fallback = body.querySelector('.cover-fallback');
-                if (fallback) fallback.style.display = 'none';
-              }
-            } else {
-              this.showToast('Nahrávání selhalo', 'error');
-            }
-          } catch (err) {
-            console.error('Upload error:', err);
-            this.showToast('Chyba při nahrávání', 'error');
-          }
-        }
-      };
+      uploadInput.onchange = (e) => handleFileUpload(e.target.files[0]);
+    }
+    if (cameraBtn && cameraInput) {
+      cameraBtn.onclick = () => cameraInput.click();
+      cameraInput.onchange = (e) => handleFileUpload(e.target.files[0]);
     }
 
     this.updateToggleButtons();
