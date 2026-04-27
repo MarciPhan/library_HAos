@@ -104,15 +104,24 @@ class BookcaseCoverView(HomeAssistantView):
             
             file_path = os.path.join(self.cover_dir, f"{book_id}.jpg")
             
-            # Přečteme data a uložíme
-            size = 0
-            with open(file_path, "wb") as f:
-                while True:
-                    chunk = await field.read_chunk()
-                    if not chunk:
-                        break
-                    size += len(chunk)
-                    f.write(chunk)
+            # Přečteme data
+            content = b""
+            while True:
+                chunk = await field.read_chunk()
+                if not chunk:
+                    break
+                content += chunk
+            
+            size = len(content)
+            
+            # Uložíme soubor přes executor
+            def save_file():
+                if not os.path.exists(self.cover_dir):
+                    os.makedirs(self.cover_dir, exist_ok=True)
+                with open(file_path, "wb") as f:
+                    f.write(content)
+            
+            await self.hass.async_add_executor_job(save_file)
             
             _LOGGER.info("Bookcase: Uploaded custom cover for %s (%d bytes)", book_id, size)
             
@@ -120,6 +129,14 @@ class BookcaseCoverView(HomeAssistantView):
             if book_id in self.books:
                 # Vynutíme aktualizaci cover_url aby se projevila změna
                 self.books[book_id]["cover_url"] = f"/bookcase_static/covers/{book_id}.jpg?v={size}"
+                
+                # Uložíme změnu do storage
+                from homeassistant.helpers.storage import Store
+                store = Store(self.hass, 1, "bookcase_data")
+                data = await store.async_load() or {"books": {}}
+                if "books" in data and book_id in data["books"]:
+                    data["books"][book_id]["cover_url"] = self.books[book_id]["cover_url"]
+                    await store.async_save(data)
             
             self.hass.bus.async_fire("bookcase_updated")
             return aiohttp.web.Response(status=200, text="OK")
@@ -498,7 +515,7 @@ async def async_setup_entry(hass: HomeAssistant, entry):
             frontend_url_path="bookcase",
             config={"_panel_custom": {
                 "name": "bookcase-panel",
-                "module_url": "/bookcase_static/panel.js?v=9.0"
+                "module_url": "/bookcase_static/panel.js?v=9.1"
             }},
             require_admin=False,
         )

@@ -188,7 +188,7 @@ class BookcasePanel extends HTMLElement {
           color: var(--primary-text-color);
           outline: none;
         }
-        button.action-btn {
+        .action-btn {
           background: var(--primary-color);
           color: white;
           border: none;
