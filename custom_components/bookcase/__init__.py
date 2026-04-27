@@ -82,7 +82,7 @@ class BookcaseExportView(HomeAssistantView):
 
 class BookcaseCoverView(HomeAssistantView):
     """View to serve and cache book covers."""
-    url = "/bookcase_static/covers/{book_id}.jpg"
+    url = "/bookcase_covers/{book_id}.jpg"
     name = "api:bookcase:cover"
     requires_auth = False # Veřejně dostupné pro panel
 
@@ -128,7 +128,7 @@ class BookcaseCoverView(HomeAssistantView):
             # Pokud kniha nemá žádné cover_url nebo má staré, nastavíme jí lokální odkaz
             if book_id in self.books:
                 # Vynutíme aktualizaci cover_url aby se projevila změna
-                self.books[book_id]["cover_url"] = f"/bookcase_static/covers/{book_id}.jpg?v={size}"
+                self.books[book_id]["cover_url"] = f"/bookcase_covers/{book_id}.jpg?v={size}"
                 
                 # Uložíme změnu do storage
                 from homeassistant.helpers.storage import Store
@@ -364,7 +364,7 @@ async def async_setup_entry(hass: HomeAssistant, entry):
                 # Pokud se mění cover_url, smažeme lokální cache, ALE jen pokud nová adresa není ta lokální
                 if key == "cover_url" and val != book.get("cover_url"):
                     # Pokud nová adresa nezačíná na náš lokální prefix, smažeme starý lokální soubor
-                    if not val or not val.startswith("/bookcase_static/covers/"):
+                    if not val or not val.startswith("/bookcase_covers/"):
                         cover_path = os.path.join(os.path.dirname(__file__), "www", "covers", f"{book_id}.jpg")
                         if os.path.exists(cover_path):
                             try:
@@ -518,7 +518,7 @@ async def async_setup_entry(hass: HomeAssistant, entry):
             frontend_url_path="bookcase",
             config={"_panel_custom": {
                 "name": "bookcase-panel",
-                "module_url": "/bookcase_static/panel.js?v=9.3"
+                "module_url": "/bookcase_static/panel.js?v=9.4"
             }},
             require_admin=False,
         )

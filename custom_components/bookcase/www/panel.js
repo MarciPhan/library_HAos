@@ -884,7 +884,7 @@ class BookcasePanel extends HTMLElement {
 
     body.innerHTML = `
       <div class="modal-left">
-        <img src="/bookcase_static/covers/${book.id}.jpg?v=${book.cover_url ? book.cover_url.length : 0}" onerror="this.src='${book.cover_url || ''}'; this.onerror=function(){this.style.display='none'; this.nextElementSibling.style.display='flex';};">
+        <img src="/bookcase_covers/${book.id}.jpg?v=${book.cover_url ? book.cover_url.length : 0}" onerror="this.src='${book.cover_url || ''}'; this.onerror=function(){this.style.display='none'; this.nextElementSibling.style.display='flex';};">
         <div class="cover-fallback" style="display:none; font-size: 14px;">
           <span style="font-size: 48px; margin-bottom: 10px;">📖</span>
           ${book.title || 'Nová kniha'}
@@ -1104,24 +1104,29 @@ class BookcasePanel extends HTMLElement {
       formData.append('file', file);
       try {
         this.showToast('Nahrávám obálku...', 'info');
-        const response = await fetch(`/bookcase_static/covers/${book.id}.jpg`, {
+        const response = await fetch(`/bookcase_covers/${book.id}.jpg`, {
           method: 'POST',
-          body: formData
+          body: formData,
+          headers: {
+            'Authorization': `Bearer ${this._hass.auth.data.access_token}`
+          }
         });
         if (response.ok) {
-          const newUrl = `/bookcase_static/covers/${book.id}.jpg?v=${Date.now()}`;
+          const newUrl = `/bookcase_covers/${book.id}.jpg?v=${Date.now()}`;
           this.showToast('Obálka byla uložena', 'success');
           const urlInput = body.querySelector('#edit-cover-url');
           if (urlInput) urlInput.value = newUrl;
           const img = body.querySelector('.modal-left img');
           if (img) {
             img.style.display = 'block';
-            img.src = `/bookcase_static/covers/${book.id}.jpg?v=${Date.now()}`;
+            img.src = `${newUrl}`;
             const fallback = body.querySelector('.cover-fallback');
             if (fallback) fallback.style.display = 'none';
           }
         } else {
-          this.showToast('Nahrávání selhalo', 'error');
+          const errText = await response.text();
+          console.error('Upload failed:', response.status, errText);
+          this.showToast(`Nahrávání selhalo (${response.status})`, 'error');
         }
       } catch (err) {
         console.error('Upload error:', err);
@@ -1207,7 +1212,7 @@ class BookcasePanel extends HTMLElement {
       const statusLabels = { 'to_read': 'MÁME', 'reading': 'ČTU', 'read': 'PŘEČTENO', 'wishlist': 'CHCI' };
       card.innerHTML = `
         <div class="cover-wrapper">
-          <img src="/bookcase_static/covers/${book.id}.jpg?v=${book.cover_url ? book.cover_url.length : 0}" onerror="this.src='${book.cover_url || ''}'; this.onerror=function(){this.style.display='none'; this.nextElementSibling.style.display='flex';};">
+          <img src="/bookcase_covers/${book.id}.jpg?v=${book.cover_url ? book.cover_url.length : 0}" onerror="this.src='${book.cover_url || ''}'; this.onerror=function(){this.style.display='none'; this.nextElementSibling.style.display='flex';};">
           <div class="cover-fallback" style="display:none;">
             <span style="font-size: 24px; margin-bottom: 5px;">📖</span>
             <div style="font-weight:bold; width:100%;">${this._formatTitle(book)}</div>
