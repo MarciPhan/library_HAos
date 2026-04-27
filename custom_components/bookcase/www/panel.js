@@ -99,26 +99,28 @@ class BookcasePanel extends HTMLElement {
           display: block;
           height: 100%;
           color: var(--primary-text-color);
-          font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+          font-family: 'Outfit', 'Roboto', -apple-system, BlinkMacSystemFont, sans-serif;
         }
         .container {
-          max-width: 1200px;
+          max-width: 1400px;
           margin: 0 auto;
-          padding: 32px 16px;
+          padding: 32px 24px;
         }
         .header {
           display: flex;
           justify-content: space-between;
-          align-items: center;
+          align-items: flex-end;
           margin-bottom: 30px;
           border-bottom: 1px solid var(--divider-color);
           padding-bottom: 20px;
         }
         .header h1 {
           margin: 0;
-          font-size: 2rem;
-          font-weight: 700;
-          color: var(--primary-text-color);
+          font-size: 2.4rem;
+          font-weight: 800;
+          background: linear-gradient(135deg, var(--primary-color), #a855f7);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
         }
         
         .toolbar {
@@ -128,80 +130,110 @@ class BookcasePanel extends HTMLElement {
           margin-bottom: 40px;
         }
 
+        .filter-bar {
+          display: flex;
+          gap: 8px;
+          overflow-x: auto;
+          padding-bottom: 8px;
+          scrollbar-width: none;
+        }
         .filter-bar::-webkit-scrollbar { display: none; }
         
         .filter-btn {
           background: var(--card-background-color);
           color: var(--primary-text-color);
           border: 1px solid var(--divider-color);
-          padding: 8px 16px;
-          border-radius: 8px;
+          padding: 10px 20px;
+          border-radius: 12px;
           cursor: pointer;
           white-space: nowrap;
-          font-weight: 500;
-          transition: all 0.2s;
+          font-weight: 600;
+          font-size: 0.9rem;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .filter-btn:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+          border-color: var(--primary-color);
         }
         .filter-btn.active {
           background: var(--primary-color);
           color: white;
           border-color: var(--primary-color);
+          box-shadow: 0 4px 12px rgba(33, 150, 243, 0.4);
         }
 
         .search-add-row {
           display: flex;
-          gap: 12px;
+          gap: 16px;
           flex-wrap: wrap;
         }
         .search-box {
-          flex-grow: 1;
+          flex: 2;
+          min-width: 280px;
           display: flex;
           align-items: center;
           background: var(--card-background-color);
-          border-radius: 8px;
-          padding: 0 15px;
+          border-radius: 14px;
+          padding: 0 18px;
           border: 1px solid var(--divider-color);
+          transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .search-box:focus-within {
+          border-color: var(--primary-color);
+          box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1);
         }
         .search-box input {
           background: transparent;
           border: none;
-          padding: 12px;
+          padding: 14px 10px;
           width: 100%;
           color: var(--primary-text-color);
           outline: none;
+          font-size: 1rem;
         }
 
         .add-box {
+          flex: 3;
+          min-width: 300px;
           display: flex;
           background: var(--card-background-color);
-          border-radius: 8px;
+          border-radius: 14px;
           border: 1px solid var(--divider-color);
-          padding: 4px;
-          gap: 4px;
-          flex-grow: 1;
+          padding: 6px;
+          gap: 6px;
         }
         .add-box input {
           background: transparent;
           border: none;
-          padding: 8px 12px;
+          padding: 8px 14px;
           flex-grow: 1;
-          min-width: 80px;
           color: var(--primary-text-color);
           outline: none;
+          font-size: 1rem;
         }
         .action-btn {
           background: var(--primary-color);
           color: white;
           border: none;
-          padding: 8px 16px;
-          border-radius: 6px;
+          padding: 10px 18px;
+          border-radius: 10px;
           cursor: pointer;
-          font-weight: bold;
+          font-weight: 700;
           display: flex;
           align-items: center;
           justify-content: center;
           gap: 8px;
-          transition: opacity 0.2s;
+          transition: all 0.2s;
           white-space: nowrap;
+        }
+        .action-btn:hover {
+          opacity: 0.9;
+          transform: scale(1.02);
+        }
+        .action-btn:active {
+          transform: scale(0.98);
         }
         button.action-btn:disabled {
           opacity: 0.5;
@@ -210,66 +242,73 @@ class BookcasePanel extends HTMLElement {
 
         .grid {
           display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-          gap: 20px;
+          grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+          gap: 24px;
         }
         .book-card {
           background: var(--card-background-color);
-          border-radius: 8px;
-          padding: 8px;
-          box-shadow: none;
+          border-radius: 16px;
+          padding: 12px;
+          box-shadow: 0 4px 20px rgba(0,0,0,0.08);
           border: 1px solid var(--divider-color);
-          transition: border-color 0.2s, transform 0.2s;
+          transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
           position: relative;
           cursor: pointer;
+          display: flex;
+          flex-direction: column;
         }
         .book-card:hover {
           border-color: var(--primary-color);
-          transform: translateY(-4px);
+          transform: translateY(-8px) scale(1.02);
+          box-shadow: 0 12px 30px rgba(0,0,0,0.15);
         }
         .cover-wrapper {
           position: relative;
           width: 100%;
           aspect-ratio: 2/3;
-          border-radius: 4px;
+          border-radius: 10px;
           overflow: hidden;
           background: var(--secondary-background-color);
           display: flex;
           align-items: center;
           justify-content: center;
+          box-shadow: 0 4px 10px rgba(0,0,0,0.2);
         }
         .book-card img { width: 100%; height: 100%; object-fit: cover; }
         .cover-fallback {
           position: absolute; top: 0; left: 0; width: 100%; height: 100%;
           display: flex; flex-direction: column; align-items: center; justify-content: center;
-          text-align: center; padding: 10px; font-size: 10px; color: var(--secondary-text-color);
-          background: var(--secondary-background-color);
+          text-align: center; padding: 15px; font-size: 11px; color: var(--secondary-text-color);
+          background: linear-gradient(145deg, var(--secondary-background-color), var(--card-background-color));
         }
         .book-title {
-          font-weight: 600;
-          margin-top: 10px;
-          font-size: 0.9rem;
-          line-height: 1.2;
+          font-weight: 700;
+          margin-top: 14px;
+          font-size: 0.95rem;
+          line-height: 1.3;
+          color: var(--primary-text-color);
         }
         .status-badge {
           position: absolute;
-          top: 6px; right: 6px;
-          padding: 2px 6px;
-          border-radius: 4px;
-          font-size: 0.6rem;
-          font-weight: bold;
+          top: 8px; right: 8px;
+          padding: 4px 8px;
+          border-radius: 6px;
+          font-size: 0.65rem;
+          font-weight: 800;
           color: white;
-          background: rgba(0,0,0,0.6);
+          background: rgba(0,0,0,0.7);
+          backdrop-filter: blur(4px);
           z-index: 2;
+          letter-spacing: 0.5px;
         }
         .lent-badge {
           position: absolute;
           bottom: 0; left: 0; right: 0;
           background: #ff9800;
           color: white;
-          padding: 4px;
-          font-size: 0.6rem;
-          font-weight: bold;
+          padding: 6px;
+          font-size: 0.65rem;
+          font-weight: 800;
           text-align: center;
           z-index: 2;
         }
@@ -279,124 +318,152 @@ class BookcasePanel extends HTMLElement {
           display: none;
           position: fixed;
           top: 0; left: 0; width: 100%; height: 100%;
-          background: rgba(0,0,0,0.75);
-          backdrop-filter: blur(4px);
+          background: rgba(0,0,0,0.6);
+          backdrop-filter: blur(8px);
+          -webkit-backdrop-filter: blur(8px);
           z-index: 1000;
           align-items: center; justify-content: center;
           padding: 20px;
+          transition: opacity 0.3s;
         }
-        .modal.open { display: flex; }
+        .modal.open { display: flex; animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        
         .modal-content {
           background: var(--card-background-color);
-          max-width: 950px;
+          max-width: 1000px;
           width: 100%;
-          border-radius: 16px;
+          border-radius: 24px;
           display: flex;
           overflow: hidden;
           position: relative;
-          max-height: 92vh;
-          border: 1px solid var(--divider-color);
-          box-shadow: 0 25px 60px rgba(0,0,0,0.5);
+          max-height: 94vh;
+          border: 1px solid rgba(255,255,255,0.1);
+          box-shadow: 0 30px 90px rgba(0,0,0,0.6);
+          animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
         }
+        @keyframes slideUp { from { transform: translateY(30px) scale(0.95); opacity: 0; } to { transform: translateY(0) scale(1); opacity: 1; } }
+
         .modal-close {
-          position: absolute; top: 12px; right: 12px;
-          width: 36px; height: 36px; border-radius: 50%;
-          background: rgba(0,0,0,0.4);
-          color: white; font-size: 18px;
+          position: absolute; top: 16px; right: 16px;
+          width: 40px; height: 40px; border-radius: 50%;
+          background: rgba(0,0,0,0.3);
+          backdrop-filter: blur(10px);
+          color: white; font-size: 22px;
           display: flex; align-items: center; justify-content: center;
           cursor: pointer; z-index: 11;
-          transition: background 0.2s;
+          transition: all 0.2s;
         }
-        .modal-close:hover { background: rgba(0,0,0,0.7); }
+        .modal-close:hover { background: rgba(0,0,0,0.6); transform: rotate(90deg); }
+        
         .modal-body { display: flex; width: 100%; }
+        
         .modal-left {
-          width: 300px; flex-shrink: 0;
+          width: 340px; flex-shrink: 0;
           background: var(--secondary-background-color);
           position: relative;
-          display: flex; flex-direction: column; align-items: center; justify-content: center;
-          padding: 20px;
+          display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
+          padding: 30px;
+          border-right: 1px solid var(--divider-color);
         }
-        .modal-left img { width: 100%; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+        .modal-left img { 
+          width: 100%; 
+          border-radius: 12px; 
+          box-shadow: 0 15px 35px rgba(0,0,0,0.4);
+          transition: transform 0.3s;
+        }
+        .modal-left img:hover { transform: scale(1.03); }
+        
         .modal-right {
-          padding: 28px 30px;
+          padding: 35px;
           flex-grow: 1;
           display: flex; flex-direction: column; gap: 0;
           overflow-y: auto;
-          max-height: 92vh;
+          max-height: 94vh;
+          background: linear-gradient(to bottom, var(--card-background-color), var(--primary-background-color));
         }
 
         .section-title {
-          font-size: 0.65rem; font-weight: 800; text-transform: uppercase;
-          letter-spacing: 1.5px; color: var(--primary-color);
-          margin: 20px 0 10px 0; padding-bottom: 6px;
-          border-bottom: 1px solid var(--divider-color);
+          font-size: 0.75rem; font-weight: 800; text-transform: uppercase;
+          letter-spacing: 2px; color: var(--primary-color);
+          margin: 28px 0 16px 0; padding-bottom: 8px;
+          border-bottom: 2px solid var(--divider-color);
+          display: flex; align-items: center; gap: 8px;
         }
         .section-title:first-child { margin-top: 0; }
         
-        .form-group { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; }
-        .form-row { display: grid; gap: 12px; margin-bottom: 12px; }
+        .form-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+        .form-row { display: grid; gap: 16px; margin-bottom: 16px; }
         .form-row.cols-2 { grid-template-columns: 1fr 1fr; }
         .form-row.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
         
         label {
-          font-size: 0.68rem; font-weight: 700;
+          font-size: 0.7rem; font-weight: 700;
           color: var(--secondary-text-color);
-          text-transform: uppercase; letter-spacing: 0.5px;
+          text-transform: uppercase; letter-spacing: 0.8px;
         }
         select, textarea, .text-input {
-          background: var(--secondary-background-color);
+          background: var(--card-background-color);
           border: 1px solid var(--divider-color);
           color: var(--primary-text-color);
-          padding: 9px 12px;
-          border-radius: 8px;
-          font-size: 0.85rem;
+          padding: 12px 14px;
+          border-radius: 12px;
+          font-size: 0.95rem;
           outline: none;
-          transition: border-color 0.2s;
+          transition: all 0.2s;
+          box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
         }
         select:focus, textarea:focus, .text-input:focus {
           border-color: var(--primary-color);
+          box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1);
         }
         .text-input:disabled {
-          opacity: 0.5; cursor: not-allowed;
+          opacity: 0.6; cursor: not-allowed; background: var(--secondary-background-color);
         }
-        textarea { resize: vertical; font-family: inherit; }
+        textarea { resize: vertical; font-family: inherit; line-height: 1.5; }
         
         .meta-chips {
-          display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px;
+          display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px;
         }
         .meta-chip {
           background: var(--secondary-background-color);
           border: 1px solid var(--divider-color);
-          padding: 4px 10px; border-radius: 20px;
-          font-size: 0.75rem; color: var(--secondary-text-color);
+          padding: 6px 14px; border-radius: 20px;
+          font-size: 0.8rem; color: var(--secondary-text-color);
           white-space: nowrap;
-        }
-        .meta-chip b { color: var(--primary-text-color); margin-left: 4px; }
-        
-        .rating-stars { display: flex; gap: 4px; font-size: 1.5rem; color: #ffca28; cursor: pointer; }
-        
-        .toggle-row { display: flex; gap: 10px; margin-bottom: 12px; }
-        .toggle-btn {
-          flex: 1;
-          padding: 10px;
-          border-radius: 8px;
-          border: 1px solid var(--divider-color);
-          background: var(--secondary-background-color);
-          color: var(--primary-text-color);
-          cursor: pointer;
-          font-weight: 600; font-size: 0.85rem;
-          text-align: center;
           transition: all 0.2s;
         }
-        .toggle-btn:hover { border-color: var(--primary-color); }
-        .toggle-btn.active-read { background: #4caf50; color: white; border-color: #4caf50; }
-        .toggle-btn.active-wish { background: #03a9f4; color: white; border-color: #03a9f4; }
+        .meta-chip:hover { border-color: var(--primary-color); color: var(--primary-text-color); }
+        .meta-chip b { color: var(--primary-text-color); margin-left: 5px; }
         
-        .user-list { font-size: 0.75rem; color: var(--secondary-text-color); margin-top: 3px; text-align: center; }
+        .rating-stars { display: flex; gap: 6px; font-size: 1.8rem; color: #ffca28; cursor: pointer; }
+        .rating-stars span { transition: transform 0.2s; }
+        .rating-stars span:hover { transform: scale(1.2); }
+        
+        .toggle-row { display: flex; gap: 12px; margin-bottom: 16px; }
+        .toggle-btn {
+          flex: 1;
+          padding: 14px;
+          border-radius: 14px;
+          border: 1px solid var(--divider-color);
+          background: var(--card-background-color);
+          color: var(--primary-text-color);
+          cursor: pointer;
+          font-weight: 700; font-size: 0.9rem;
+          text-align: center;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+          display: flex; align-items: center; justify-content: center; gap: 8px;
+        }
+        .toggle-btn:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+        .toggle-btn.active-read { background: #10b981; color: white; border-color: #10b981; box-shadow: 0 5px 15px rgba(16, 185, 129, 0.4); }
+        .toggle-btn.active-wish { background: #0ea5e9; color: white; border-color: #0ea5e9; box-shadow: 0 5px 15px rgba(14, 165, 233, 0.4); }
+        
+        .user-list { font-size: 0.8rem; color: var(--secondary-text-color); margin-top: 6px; text-align: center; font-style: italic; }
         
         .spinner {
-          width: 14px; height: 14px;
-          border: 2px solid rgba(255,255,255,0.3);
+          width: 18px; height: 18px;
+          border: 3px solid rgba(255,255,255,0.3);
           border-radius: 50%; border-top-color: #fff;
           animation: spin 0.8s linear infinite;
           display: none;
@@ -404,59 +471,81 @@ class BookcasePanel extends HTMLElement {
         @keyframes spin { to { transform: rotate(360deg); } }
 
         .toast {
-          position: fixed; bottom: 30px; left: 50%;
+          position: fixed; bottom: 40px; left: 50%;
           transform: translateX(-50%) translateY(100px);
-          padding: 12px 24px; border-radius: 8px;
-          color: white; font-weight: 600; font-size: 0.9rem;
+          padding: 14px 28px; border-radius: 16px;
+          color: white; font-weight: 700; font-size: 1rem;
           z-index: 9999; pointer-events: none; opacity: 0;
-          transition: transform 0.3s ease, opacity 0.3s ease;
+          transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
           max-width: 90vw; text-align: center;
+          box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+          backdrop-filter: blur(10px);
         }
         .toast.visible { transform: translateX(-50%) translateY(0); opacity: 1; }
-        .toast.success { background: #4caf50; }
-        .toast.warning { background: #ff9800; }
-        .toast.error { background: #f44336; }
-        .toast.info { background: #2196f3; }
+        .toast.success { background: rgba(16, 185, 129, 0.9); }
+        .toast.warning { background: rgba(245, 158, 11, 0.9); }
+        .toast.error { background: rgba(239, 68, 68, 0.9); }
+        .toast.info { background: rgba(59, 130, 246, 0.9); }
 
-        @media (max-width: 600px) {
-          .container { padding: 16px 12px; }
-          .header h1 { font-size: 1.5rem; }
+        @media (max-width: 768px) {
+          .container { padding: 20px 16px; }
+          .header { flex-direction: column; align-items: flex-start; gap: 10px; }
+          .header h1 { font-size: 1.8rem; }
           .grid {
-            grid-template-columns: repeat(2, 1fr);
-            gap: 12px;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 16px;
           }
-          .book-card { padding: 6px; }
-          .book-title { font-size: 0.8rem; margin-top: 6px; }
-          .search-add-row { gap: 8px; }
-          .add-box { width: 100%; order: 2; }
-          .search-box { width: 100%; order: 1; }
-          .modal-body { flex-direction: column; }
-          .modal-left { width: 100%; height: auto; }
-          .modal-right { padding: 20px; }
-          .form-row.cols-3, .form-row.cols-2 { grid-template-columns: 1fr; }
-          .toggle-row { flex-direction: column; }
+          .book-card { padding: 8px; border-radius: 12px; }
+          .book-title { font-size: 0.85rem; margin-top: 8px; }
+          .search-add-row { gap: 12px; }
+          .add-box, .search-box { width: 100%; min-width: 0; }
+          
+          .modal { padding: 0; }
+          .modal-content { 
+            height: 100%; max-height: 100%; border-radius: 0; border: none;
+            flex-direction: column;
+          }
+          .modal-body { flex-direction: column; height: 100%; overflow-y: auto; }
+          .modal-left { 
+            width: 100%; height: auto; padding: 20px; 
+            border-right: none; border-bottom: 1px solid var(--divider-color);
+            background: linear-gradient(to bottom, var(--secondary-background-color), var(--card-background-color));
+          }
+          .modal-left img { max-width: 180px; margin: 0 auto; display: block; }
+          .modal-right { padding: 20px; overflow-y: visible; max-height: none; }
+          .form-row.cols-3, .form-row.cols-2 { grid-template-columns: 1fr; gap: 8px; }
+          .form-group { margin-bottom: 12px; }
+          .toggle-row { flex-direction: column; gap: 8px; }
+          .section-title { margin-top: 20px; }
+          .modal-close { top: 12px; right: 12px; width: 36px; height: 36px; background: rgba(0,0,0,0.5); }
         }
 
         #scanner-modal {
           display:none; position:fixed; top:0; left:0; width:100%; height:100%;
-          background:rgba(0,0,0,0.9); z-index:2000;
+          background:rgba(0,0,0,0.95); z-index:2000;
           align-items:center; justify-content:center; flex-direction:column;
+          backdrop-filter: blur(15px);
         }
         #scanner-modal.open { display:flex; }
-        #scanner-reader { width:min(400px, 90vw); min-height: 250px; background: #000; border-radius: 8px; overflow: hidden; }
+        #scanner-reader { width:min(450px, 95vw); min-height: 300px; background: #000; border-radius: 20px; overflow: hidden; box-shadow: 0 0 50px rgba(33, 150, 243, 0.3); }
         #scanner-close {
-          position:absolute; top:20px; right:20px;
-          width:44px; height:44px; border-radius:50%; background:rgba(255,255,255,0.2);
-          color:white; font-size:24px; border:none; cursor:pointer;
+          position:absolute; top:30px; right:30px;
+          width:50px; height:50px; border-radius:50%; background:rgba(255,255,255,0.1);
+          color:white; font-size:28px; border:none; cursor:pointer;
           display:flex; align-items:center; justify-content:center;
+          transition: all 0.2s;
         }
+        #scanner-close:hover { background: rgba(255,255,255,0.2); transform: rotate(90deg); }
+        
         .scan-btn {
-          background: var(--primary-color); color:white; border:none;
-          width:42px; height:42px; border-radius:8px; cursor:pointer;
-          font-size:1.2rem; display:flex; align-items:center; justify-content:center;
-          transition: opacity 0.2s;
+          background: linear-gradient(135deg, var(--primary-color), #a855f7); 
+          color:white; border:none;
+          width:46px; height:46px; border-radius:12px; cursor:pointer;
+          font-size:1.4rem; display:flex; align-items:center; justify-content:center;
+          transition: all 0.2s;
+          box-shadow: 0 4px 10px rgba(168, 85, 247, 0.3);
         }
-        .scan-btn:hover { opacity:0.8; }
+        .scan-btn:hover { transform: scale(1.05); box-shadow: 0 6px 15px rgba(168, 85, 247, 0.4); }
       </style>
       
       <div class="container">
@@ -891,7 +980,7 @@ class BookcasePanel extends HTMLElement {
         </div>
       </div>
       <div class="modal-right">
-        <div class="section-title">📚 Základní informace</div>
+        <div class="section-title"><span>📚</span> Základní informace</div>
         <div class="form-group">
           <label>Název</label>
           <input type="text" id="edit-title" class="text-input" value="${book.title || ''}" placeholder="Titul knihy...">
@@ -931,7 +1020,7 @@ class BookcasePanel extends HTMLElement {
           </div>
         </div>
 
-        <div class="section-title">📖 Detaily</div>
+        <div class="section-title"><span>📖</span> Detaily</div>
         <div class="form-row cols-3">
           <div class="form-group">
             <label>Počet stran</label>
@@ -966,7 +1055,7 @@ class BookcasePanel extends HTMLElement {
           </div>
         </div>
 
-        <div class="section-title">⭐ Stav a hodnocení</div>
+        <div class="section-title"><span>⭐</span> Stav a hodnocení</div>
         <div class="toggle-row">
           <div style="flex:1;"><div class="toggle-btn" id="toggle-read">✓ Přečetl jsem</div><div class="user-list" id="read-users"></div></div>
           <div style="flex:1;"><div class="toggle-btn" id="toggle-wish">♡ Chci přečíst</div><div class="user-list" id="wish-users"></div></div>
@@ -1015,7 +1104,7 @@ class BookcasePanel extends HTMLElement {
           </div>
         </div>
 
-        <div class="section-title">📝 Poznámky</div>
+        <div class="section-title"><span>📝</span> Poznámky</div>
         <div class="form-group">
           <textarea id="edit-notes" rows="2" placeholder="Moje osobní poznámky...">${notes}</textarea>
           ${otherUsersHtml}
