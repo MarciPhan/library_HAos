@@ -43,8 +43,9 @@ class BookcaseStatsSensor(SensorEntity):
         processed_books = []
         for book in books.values():
             b = book.copy()
-            # Posíláme odkaz na náš vnitřní proxy server, který zajistí kešování
-            b["cover_url"] = f"/bookcase_static/covers/{b['id']}.jpg"
+            # Pokud kniha nemá cover_url, použijeme náš proxy endpoint
+            if not b.get("cover_url"):
+                b["cover_url"] = f"/bookcase_covers/{b['id']}.jpg"
             processed_books.append(b)
             
         if self._category == "total":

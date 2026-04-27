@@ -94,12 +94,14 @@ class BookcasePanel extends HTMLElement {
   initStructure() {
     this.innerHTML = `
       <style>
+        * { box-sizing: border-box; }
         :host {
           background-color: var(--primary-background-color);
           display: block;
           height: 100%;
           color: var(--primary-text-color);
           font-family: 'Outfit', 'Roboto', -apple-system, BlinkMacSystemFont, sans-serif;
+          overflow-x: hidden;
         }
         .container {
           max-width: 1400px;
@@ -118,9 +120,7 @@ class BookcasePanel extends HTMLElement {
           margin: 0;
           font-size: 2.4rem;
           font-weight: 800;
-          background: linear-gradient(135deg, var(--primary-color), #a855f7);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
+          color: var(--primary-color);
         }
         
         .toolbar {
@@ -279,7 +279,7 @@ class BookcasePanel extends HTMLElement {
           position: absolute; top: 0; left: 0; width: 100%; height: 100%;
           display: flex; flex-direction: column; align-items: center; justify-content: center;
           text-align: center; padding: 15px; font-size: 11px; color: var(--secondary-text-color);
-          background: linear-gradient(145deg, var(--secondary-background-color), var(--card-background-color));
+          background: var(--secondary-background-color);
         }
         .book-title {
           font-weight: 700;
@@ -380,7 +380,8 @@ class BookcasePanel extends HTMLElement {
           display: flex; flex-direction: column; gap: 0;
           overflow-y: auto;
           max-height: 94vh;
-          background: linear-gradient(to bottom, var(--card-background-color), var(--primary-background-color));
+          background: var(--card-background-color);
+          overflow-x: hidden;
         }
 
         .section-title {
@@ -412,6 +413,9 @@ class BookcasePanel extends HTMLElement {
           outline: none;
           transition: all 0.2s;
           box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+          width: 100%;
+          max-width: 100%;
+          overflow-wrap: break-word;
         }
         select:focus, textarea:focus, .text-input:focus {
           border-color: var(--primary-color);
@@ -538,12 +542,12 @@ class BookcasePanel extends HTMLElement {
         #scanner-close:hover { background: rgba(255,255,255,0.2); transform: rotate(90deg); }
         
         .scan-btn {
-          background: linear-gradient(135deg, var(--primary-color), #a855f7); 
+          background: var(--primary-color); 
           color:white; border:none;
           width:46px; height:46px; border-radius:12px; cursor:pointer;
           font-size:1.4rem; display:flex; align-items:center; justify-content:center;
           transition: all 0.2s;
-          box-shadow: 0 4px 10px rgba(168, 85, 247, 0.3);
+          box-shadow: 0 4px 10px rgba(var(--rgb-primary-color, 33, 150, 243), 0.3);
         }
         .scan-btn:hover { transform: scale(1.05); box-shadow: 0 6px 15px rgba(168, 85, 247, 0.4); }
       </style>
@@ -973,7 +977,7 @@ class BookcasePanel extends HTMLElement {
 
     body.innerHTML = `
       <div class="modal-left">
-        <img src="/bookcase_covers/${book.id}.jpg?v=${book.cover_url ? book.cover_url.length : 0}" onerror="this.src='${book.cover_url || ''}'; this.onerror=function(){this.style.display='none'; this.nextElementSibling.style.display='flex';};">
+        <img src="${book.cover_url || `/bookcase_covers/${book.id}.jpg`}" onerror="if(!this.dataset.triedFallback){this.dataset.triedFallback=true; this.src='/bookcase_covers/${book.id}.jpg';}else{this.style.display='none'; this.nextElementSibling.style.display='flex';}">
         <div class="cover-fallback" style="display:none; font-size: 14px;">
           <span style="font-size: 48px; margin-bottom: 10px;">📖</span>
           ${book.title || 'Nová kniha'}
@@ -1301,7 +1305,7 @@ class BookcasePanel extends HTMLElement {
       const statusLabels = { 'to_read': 'MÁME', 'reading': 'ČTU', 'read': 'PŘEČTENO', 'wishlist': 'CHCI' };
       card.innerHTML = `
         <div class="cover-wrapper">
-          <img src="/bookcase_covers/${book.id}.jpg?v=${book.cover_url ? book.cover_url.length : 0}" onerror="this.src='${book.cover_url || ''}'; this.onerror=function(){this.style.display='none'; this.nextElementSibling.style.display='flex';};">
+          <img src="${book.cover_url || `/bookcase_covers/${book.id}.jpg`}" onerror="if(!this.dataset.triedFallback){this.dataset.triedFallback=true; this.src='/bookcase_covers/${book.id}.jpg';}else{this.style.display='none'; this.nextElementSibling.style.display='flex';}">
           <div class="cover-fallback" style="display:none;">
             <span style="font-size: 24px; margin-bottom: 5px;">📖</span>
             <div style="font-weight:bold; width:100%;">${this._formatTitle(book)}</div>

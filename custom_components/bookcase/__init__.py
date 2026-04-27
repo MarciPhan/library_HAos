@@ -113,6 +113,8 @@ class BookcaseCoverView(HomeAssistantView):
                 content += chunk
             
             size = len(content)
+            import time
+            timestamp = int(time.time())
             
             # Uložíme soubor přes executor
             def save_file():
@@ -125,10 +127,9 @@ class BookcaseCoverView(HomeAssistantView):
             
             _LOGGER.info("Bookcase: Uploaded custom cover for %s (%d bytes)", book_id, size)
             
-            # Pokud kniha nemá žádné cover_url nebo má staré, nastavíme jí lokální odkaz
+            # Nastavíme lokální odkaz s timestampem pro cache busting
             if book_id in self.books:
-                # Vynutíme aktualizaci cover_url aby se projevila změna
-                self.books[book_id]["cover_url"] = f"/bookcase_covers/{book_id}.jpg?v={size}"
+                self.books[book_id]["cover_url"] = f"/bookcase_covers/{book_id}.jpg?v={timestamp}"
                 
                 # Uložíme změnu do storage
                 from homeassistant.helpers.storage import Store
@@ -159,6 +160,10 @@ class BookcaseCoverView(HomeAssistantView):
 
         cover_url = book["cover_url"]
         
+        # Ochrana proti nekonečné smyčce – pokud cover_url ukazuje zpět na nás, ale soubor nemáme
+        if cover_url.startswith("/bookcase_covers/"):
+            return aiohttp.web.Response(status=404)
+        
         # 3. Stáhneme obálku s User-Agentem a podporou různých formátů
         headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"}
         try:
@@ -167,8 +172,13 @@ class BookcaseCoverView(HomeAssistantView):
                     if response.status == 200:
                         content = await response.read()
                         content_type = response.headers.get("Content-Type", "image/jpeg")
-                        with open(file_path, "wb") as f:
-                            f.write(content)
+                        
+                        # Uložíme přes executor
+                        def save_cache():
+                            with open(file_path, "wb") as f:
+                                f.write(content)
+                        await self.hass.async_add_executor_job(save_cache)
+                        
                         return aiohttp.web.Response(body=content, content_type=content_type)
         except Exception as e:
             _LOGGER.error("Failed to fetch cover from %s: %s", cover_url, e)
