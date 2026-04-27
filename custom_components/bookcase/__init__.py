@@ -361,14 +361,17 @@ async def async_setup_entry(hass: HomeAssistant, entry):
                 val = call.data[key]
                 
                 # Pokud se mění cover_url, smažeme lokální cache
+                # Pokud se mění cover_url, smažeme lokální cache, ALE jen pokud nová adresa není ta lokální
                 if key == "cover_url" and val != book.get("cover_url"):
-                    cover_path = os.path.join(os.path.dirname(__file__), "www", "covers", f"{book_id}.jpg")
-                    if os.path.exists(cover_path):
-                        try:
-                            os.remove(cover_path)
-                            _LOGGER.debug("Bookcase: Deleted cached cover for %s due to URL change", book_id)
-                        except Exception as e:
-                            _LOGGER.error("Bookcase: Failed to delete cached cover %s: %s", cover_path, e)
+                    # Pokud nová adresa nezačíná na náš lokální prefix, smažeme starý lokální soubor
+                    if not val or not val.startswith("/bookcase_static/covers/"):
+                        cover_path = os.path.join(os.path.dirname(__file__), "www", "covers", f"{book_id}.jpg")
+                        if os.path.exists(cover_path):
+                            try:
+                                os.remove(cover_path)
+                                _LOGGER.debug("Bookcase: Deleted cached cover for %s due to external URL change", book_id)
+                            except Exception as e:
+                                _LOGGER.error("Bookcase: Failed to delete cached cover %s: %s", cover_path, e)
 
                 if key in merge_keys and isinstance(val, dict):
                     # Inteligentní merge: aktualizujeme pouze klíče (uživatele) přítomné v požadavku
@@ -515,7 +518,7 @@ async def async_setup_entry(hass: HomeAssistant, entry):
             frontend_url_path="bookcase",
             config={"_panel_custom": {
                 "name": "bookcase-panel",
-                "module_url": "/bookcase_static/panel.js?v=9.1"
+                "module_url": "/bookcase_static/panel.js?v=9.3"
             }},
             require_admin=False,
         )

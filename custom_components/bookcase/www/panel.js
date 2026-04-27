@@ -1109,7 +1109,10 @@ class BookcasePanel extends HTMLElement {
           body: formData
         });
         if (response.ok) {
+          const newUrl = `/bookcase_static/covers/${book.id}.jpg?v=${Date.now()}`;
           this.showToast('Obálka byla uložena', 'success');
+          const urlInput = body.querySelector('#edit-cover-url');
+          if (urlInput) urlInput.value = newUrl;
           const img = body.querySelector('.modal-left img');
           if (img) {
             img.style.display = 'block';
